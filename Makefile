@@ -20,3 +20,6 @@ bin:
 cleanall:
 	rm -rf $(BIN_DIR)
 	rm -rf $(DIST_DIR)
+
+personal: cleanall bin
+	cp bin/gocsv ~/bin/gocsv
