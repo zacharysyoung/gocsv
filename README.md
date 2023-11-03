@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD033 -->
 # GoCSV
 
 Command line CSV processing tool inspired by [csvkit](https://csvkit.readthedocs.io). But faster and less memory intensive. And written in Go.
@@ -10,7 +11,7 @@ To install on Apple OS X, open a Terminal window and run
 
 For other platforms, see the [Installation](#installation) section.
 
-### Table of Contents
+## Table of Contents
 
 - [Introduction](#introduction)
 - [Subcommands](#subcommands)
@@ -594,7 +595,7 @@ Specifying a file by name `-` will read a CSV from standard input.
 
 When specifying columns on the command line (i.e. with the `--columns` or `-c` flags), you can specify either the indices or the names of the columns. The tool will always try to interpret columns first by index and then by name.
 
-#### Specifying Columns by Index
+### Specifying Columns by Index
 
 The tool uses 1-based indexing (as in the output of the [headers](#headers) subcommand).
 
@@ -644,36 +645,36 @@ cat test-files/left-table.csv \
 
 ### Pipelining Support
 
-| Subcommand    |    Input            |  Output  |
-| ------------- | :-----------------: | :------: |
-| add           |  &#x2714;           | &#x2714; |
-| autoincrement |  &#x2714;           | &#x2714; |
-| behead        |  &#x2714;           | &#x2714; |
-| clean         |  &#x2714;           | &#x2714; |
-| delimiter     |  &#x2714;           | &#x2714; |
-| describe      |  &#x2714;           |   N/A    |
-| dimensions    |  &#x2714;           | &#x2714;<sup>*</sup> |
-| filter        |  &#x2714;           | &#x2714; |
-| head          |  &#x2714;           | &#x2714; |
-| headers       |  &#x2714;           | &#x2714;<sup>*</sup> |
-| join          |  &#x2714;           | &#x2714; |
-| ncol          |  &#x2714;           |   N/A    |
-| nrow          |  &#x2714;           |   N/A    |
-| rename        |  &#x2714;           | &#x2714; |
-| replace       |  &#x2714;           | &#x2714; |
-| sample        |  &#x2714;           | &#x2714; |
-| select        |  &#x2714;           | &#x2714; |
-| sort          |  &#x2714;           | &#x2714; |
-| split         |  &#x2714;           |   N/A    |
-| sql           |  &#x2714;<sup>&#x2020;</sup>   | &#x2714; |
-| stack         |  &#x2714;<sup>&#x2020;</sup>   | &#x2714; |
-| stats         |  &#x2714;           |   N/A    |
-| tail          |  &#x2714;           | &#x2714; |
-| transpose     |  &#x2714;           | &#x2714; |
-| tsv           |  &#x2714;           | &#x2714; |
-| unique        |  &#x2714;           | &#x2714; |
-| view          |  &#x2714;           |   N/A    |
-| xlsx          |     N/A             | &#x2021; |
+| Subcommand    |            Input            |        Output        |
+| ------------- | :-------------------------: | :------------------: |
+| add           |          &#x2714;           |       &#x2714;       |
+| autoincrement |          &#x2714;           |       &#x2714;       |
+| behead        |          &#x2714;           |       &#x2714;       |
+| clean         |          &#x2714;           |       &#x2714;       |
+| delimiter     |          &#x2714;           |       &#x2714;       |
+| describe      |          &#x2714;           |         N/A          |
+| dimensions    |          &#x2714;           | &#x2714;<sup>*</sup> |
+| filter        |          &#x2714;           |       &#x2714;       |
+| head          |          &#x2714;           |       &#x2714;       |
+| headers       |          &#x2714;           | &#x2714;<sup>*</sup> |
+| join          |          &#x2714;           |       &#x2714;       |
+| ncol          |          &#x2714;           |         N/A          |
+| nrow          |          &#x2714;           |         N/A          |
+| rename        |          &#x2714;           |       &#x2714;       |
+| replace       |          &#x2714;           |       &#x2714;       |
+| sample        |          &#x2714;           |       &#x2714;       |
+| select        |          &#x2714;           |       &#x2714;       |
+| sort          |          &#x2714;           |       &#x2714;       |
+| split         |          &#x2714;           |         N/A          |
+| sql           | &#x2714;<sup>&#x2020;</sup> |       &#x2714;       |
+| stack         | &#x2714;<sup>&#x2020;</sup> |       &#x2714;       |
+| stats         |          &#x2714;           |         N/A          |
+| tail          |          &#x2714;           |       &#x2714;       |
+| transpose     |          &#x2714;           |       &#x2714;       |
+| tsv           |          &#x2714;           |       &#x2714;       |
+| unique        |          &#x2714;           |       &#x2714;       |
+| view          |          &#x2714;           |         N/A          |
+| xlsx          |             N/A             |       &#x2021;       |
 
 \* `dimensions` and `headers` write to CSV format when using the `--csv` argument.
 
@@ -701,49 +702,49 @@ gocsv select -c 1 tab-delimited.tsv
 
 ## Examples
 
-##### Copy Values
+### Copy Values
 
 ```shell
 gocsv tsv test-files/left-table.csv | pbcopy
 ```
 
-##### Reorder Columns
+### Reorder Columns
 
 ```shell
 gocsv select --columns 2,1 test-files/left-table.csv
 ```
 
-##### Duplicate Columns
+### Duplicate Columns
 
 ```shell
 gocsv select --columns 1,1,2,2 test-files/left-table.csv
 ```
 
-##### VLOOKUP aka Join
+### VLOOKUP aka Join
 
 ```shell
 gocsv join --left --columns LID,RID test-files/left-table.csv test-files/right-table.csv
 ```
 
-##### Distinct Column Values
+### Distinct Column Values
 
 ```shell
 gocsv select --columns LID test-files/left-table.csv | gocsv behead | sort | uniq
 ```
 
-##### Count of Distinct Column Values
+### Count of Distinct Column Values
 
 ```shell
 gocsv select --columns LID test-files/left-table.csv | gocsv behead | sort | uniq -c | sort -nr
 ```
 
-##### Extract Rows Matching Regular Expression
+### Extract Rows Matching Regular Expression
 
 ```shell
 gocsv filter --columns ABC --regex "-1$" test-files/left-table.csv
 ```
 
-##### Extract Rows with Blank Values in Column
+### Extract Rows with Blank Values in Column
 
 ```shell
 gocsv filter --columns Stringer --regex "^$" test-files/stats.csv
@@ -751,19 +752,19 @@ gocsv filter --columns Stringer --regex "^$" test-files/stats.csv
 
 If you also want to match on cells that have only whitespace, you can use a regular expression like `"^s*$"`.
 
-##### Replace Content in Cells By Regular Expression
+### Replace Content in Cells By Regular Expression
 
 ```shell
 gocsv replace --columns ABC --regex "^(.*)-(\d)$" -i --repl "\$2-\$1" test-files/left-table.csv
 ```
 
-##### Sort by Multiple Columns
+### Sort by Multiple Columns
 
 ```shell
 gocsv sort --columns LID,ABC --reverse test-files/left-table.csv
 ```
 
-##### Combine Multiple CSVs
+### Combine Multiple CSVs
 
 ```shell
 gocsv stack --groups "Primer Archivo,Segundo Archivo,Tercer Archivo" --group-name "Orden de Archivo" test-files/stack-1.csv test-files/stack-2.csv test-files/stack-3.csv
@@ -775,7 +776,7 @@ To do the same via pipelining through standard input,
 cat test-files/stack-1.csv | gocsv stack --groups "Primer Archivo,Segundo Archivo,Tercer Archivo" --group-name "Orden de Archivo" - test-files/stack-2.csv test-files/stack-3.csv
 ```
 
-##### Create a Column from a Template
+### Create a Column from a Template
 
 ```shell
 cat test-files/stats.csv | gocsv add -t "Row {{.index}}: {{if eq .Boolean \"T\"}}{{.Floater}}{{else}}{{.Integer}}{{end}}" -name "Integer or Floater"
