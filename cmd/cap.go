@@ -36,7 +36,7 @@ func (sub *CapSubcommand) Run(args []string) {
 
 func (sub *CapSubcommand) RunCap(inputCsv *InputCsv, outputCsvWriter OutputCsvWriter) {
 	if sub.namesString == "" && sub.defaultName == "" {
-		fmt.Fprintf(os.Stderr, "Must specify at least one of --names or --default-name")
+		fmt.Fprintf(os.Stderr, "Must specify at least one of --names or --default-name\n")
 		os.Exit(1)
 	}
 	var names []string
