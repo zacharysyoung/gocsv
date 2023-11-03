@@ -101,7 +101,7 @@ func Main() {
 		fmt.Printf("%s (%s)\n", VERSION, GIT_HASH)
 		return
 	}
-	if subcommandName == "help" {
+	if subcommandName == "help" || subcommandName == "-h" {
 		fmt.Fprintf(os.Stderr, "%s\n", usage())
 		return
 	}
