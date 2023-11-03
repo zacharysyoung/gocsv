@@ -54,11 +54,11 @@ func Cap(inputCsv *InputCsv, outputCsvWriter OutputCsvWriter, names []string, tr
 	numColumns := len(firstRow)
 	numNames := len(names)
 	if numColumns > numNames && defaultName == "" {
-		fmt.Fprintf(os.Stderr, "Must specify --default-name if there are more columns than column names provided")
+		fmt.Fprintf(os.Stderr, "Must specify --default-name if there are more columns than column names provided\n")
 		os.Exit(1)
 	}
 	if numColumns < numNames && !truncateNames {
-		fmt.Fprintf(os.Stderr, "Must specify --truncate-names if there are fewer columns than column names provided")
+		fmt.Fprintf(os.Stderr, "Must specify --truncate-names if there are fewer columns than column names provided\n")
 		os.Exit(1)
 	}
 
