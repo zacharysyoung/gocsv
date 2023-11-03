@@ -59,6 +59,7 @@ func init() {
 	RegisterSubcommand(&TsvSubcommand{})
 	RegisterSubcommand(&UniqueSubcommand{})
 	RegisterSubcommand(&ViewSubcommand{})
+	RegisterSubcommand(&ViewMDSubcommand{})
 	RegisterSubcommand(&XlsxSubcommand{})
 	RegisterSubcommand(&ZipSubcommand{})
 }
@@ -83,7 +84,7 @@ func usage() string {
 	for _, subcommand := range subcommands {
 		usage += usageForSubcommand(subcommand)
 	}
-	usage += "See https://github.com/aotimme/gocsv for more documentation."
+	usage += "See https://github.com/zacharysyoung/gocsv.git for more documentation."
 	return usage
 }
 
