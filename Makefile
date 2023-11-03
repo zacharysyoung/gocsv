@@ -5,10 +5,7 @@ CSV_DIR=csv
 EXECUTABLE=gocsv
 
 .DEFAULT_GOAL := bin
-.PHONY: cleanall dist bin
-
-dist:
-	bash scripts/build-dist.sh
+.PHONY: cleanall bin
 
 test:
 	cd $(CMD_DIR) && GO111MODULE=on go test -cover
