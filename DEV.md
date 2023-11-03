@@ -3,6 +3,7 @@
 ## Development
 
 After cloning this repository, set up the pre-commit hook to ensure proper formatting of the Go code and the `go.mod` and `go.sum` files:
+
 ```shell
 ln -s ../../git-hooks/pre-commit .git/hooks/pre-commit
 ```
@@ -19,7 +20,6 @@ To release an update to `gocsv`, make sure you have committed and pushed the mos
    git tag -a v1.2.3 -m "Release v1.2.3"
    git push origin v1.2.3
    ```
-
 
 2. Create cross-compiled binaries for distribution. Cross-compilation uses [xgo](https://github.com/karalabe/xgo) to handle issues with CGO packages in other platforms and architectures. Because `xgo` requires `docker`, you will need `docker` installed.
 
