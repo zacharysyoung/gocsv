@@ -25,7 +25,7 @@ func (sub *CapSubcommand) Description() string {
 func (sub *CapSubcommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&sub.namesString, "names", "", "Column names")
 	fs.BoolVar(&sub.truncateNames, "truncate-names", false, "Truncate column names if too long")
-	fs.StringVar(&sub.defaultName, "default-name", "", "Default name to use if there are more columns than column names provided")
+	fs.StringVar(&sub.defaultName, "default-name", "Col", "Default name to use if there are more columns than column names provided")
 }
 
 func (sub *CapSubcommand) Run(args []string) {
@@ -63,16 +63,12 @@ func Cap(inputCsv *InputCsv, outputCsvWriter OutputCsvWriter, names []string, tr
 	}
 
 	newHeader := make([]string, numColumns)
-	j := 0
+	j := 1
 	for i := range firstRow {
 		if i < numNames {
 			newHeader[i] = names[i]
 		} else {
-			if j == 0 {
-				newHeader[i] = defaultName
-			} else {
-				newHeader[i] = fmt.Sprintf("%s %d", defaultName, j)
-			}
+			newHeader[i] = fmt.Sprintf("%s %d", defaultName, j)
 			j++
 		}
 	}
