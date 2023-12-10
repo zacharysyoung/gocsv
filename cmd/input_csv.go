@@ -18,17 +18,30 @@ type InputCsv struct {
 }
 
 func NewInputCsv(filename string) (ic *InputCsv, err error) {
-	ic = new(InputCsv)
-	ic.filename = filename
+	var f *os.File
 	if filename == "-" {
-		ic.file = os.Stdin
+		f = os.Stdin
 	} else {
-		ic.file, err = os.Open(filename)
+		f, err = os.Open(filename)
 		if err != nil {
 			return
 		}
 	}
-	ic.bufReader = bufio.NewReader(ic.file)
+
+	ic, err = icFromReader(f)
+	if err != nil {
+		return
+	}
+
+	ic.file = f
+	ic.filename = filename
+	return
+}
+
+func icFromReader(r io.Reader) (ic *InputCsv, err error) {
+	ic = new(InputCsv)
+
+	ic.bufReader = bufio.NewReader(r)
 	ic.reader = csv.NewReader(ic.bufReader)
 	delimiter := os.Getenv("GOCSV_DELIMITER")
 	if delimiter != "" {
