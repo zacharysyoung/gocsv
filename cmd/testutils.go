@@ -5,56 +5,67 @@ import (
 	"io"
 )
 
+// testOutputCsv satisfies the OutputCsvWriter interface.
 type testOutputCsv struct {
-	rows [][]string
+	rows [][]string // all written rows, for comparison later
 }
 
 func (toc *testOutputCsv) Write(row []string) error {
-	newRow := make([]string, len(row))
-	copy(newRow, row)
-	toc.rows = append(toc.rows, newRow)
+	rrow := make([]string, len(row))
+	copy(rrow, row)
+	toc.rows = append(toc.rows, rrow)
 	return nil
 }
 
-type testInputCSV struct {
-	rows    [][]string // all rows
-	i       int        // index of next row in rows to read/start from
-	numRows int        // record len of rows during init
+func (toc *testOutputCsv) getRows() [][]string {
+	return toc.rows
 }
 
-// newTestInputCSV prepares a testInputCSV, copying all of inputRows.
-func newTestInputCSV(inputRows [][]string) *testInputCSV {
-	_len := len(inputRows)
+// testInputCsv satisfies the InputCsvReader interface.
+type testInputCsv struct {
+	rows  [][]string // all rows
+	i     int        // index of next row in rows to read from
+	nRows int        // len of input rows during init
+}
 
-	_rows := make([][]string, _len)
-	for i, x := range inputRows {
-		_row := make([]string, len(x))
-		copy(_row, x)
-		_rows[i] = _row
+// newTestInputCsv prepares a testInputCSV, deep-copying all of rows.
+func newTestInputCsv(rows [][]string) *testInputCsv {
+	llen := len(rows)
+
+	rrows := make([][]string, llen)
+	for i, row := range rows {
+		rrow := make([]string, len(row))
+		copy(rrow, row)
+		rrows[i] = rrow
 	}
 
-	return &testInputCSV{
-		rows:    _rows,
-		i:       0,
-		numRows: _len,
+	return &testInputCsv{
+		rows:  rrows,
+		i:     0,
+		nRows: llen,
 	}
 }
 
-func (ic *testInputCSV) Read() ([]string, error) {
-	if ic.i == ic.numRows {
+func (ic *testInputCsv) Read() ([]string, error) {
+	if ic.i == ic.nRows {
 		return nil, io.EOF
 	}
 	row := ic.rows[ic.i]
 	ic.i += 1
 	return row, nil
 }
-func (ic *testInputCSV) ReadAll() ([][]string, error) {
-	if ic.i == ic.numRows {
+
+func (ic *testInputCsv) ReadAll() ([][]string, error) {
+	if ic.i == ic.nRows {
 		return nil, io.EOF
 	}
-	records := ic.rows[ic.i:]
-	ic.i = ic.numRows
-	return records, nil
+	rows := ic.rows[ic.i:]
+	ic.i = ic.nRows
+	return rows, nil
+}
+
+func (ic *testInputCsv) getRows() [][]string {
+	return ic.rows
 }
 
 func assertRowEqual(got, want []string) error {
