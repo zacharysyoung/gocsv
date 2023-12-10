@@ -9,6 +9,11 @@ import (
 	"github.com/aotimme/gocsv/csv"
 )
 
+type InputCsvReader interface {
+	Read() ([]string, error)
+	ReadAll() ([][]string, error)
+}
+
 type InputCsv struct {
 	file      *os.File
 	filename  string

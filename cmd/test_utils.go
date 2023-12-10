@@ -1,6 +1,9 @@
 package cmd
 
-import "fmt"
+import (
+	"fmt"
+	"io"
+)
 
 type testOutputCsv struct {
 	rows [][]string
@@ -11,6 +14,32 @@ func (toc *testOutputCsv) Write(row []string) error {
 	copy(newRow, row)
 	toc.rows = append(toc.rows, newRow)
 	return nil
+}
+
+type testInputCSV struct {
+	i    int
+	len  int
+	rows [][]string
+}
+
+func newTestInputCSV(rows [][]string) *testInputCSV {
+	return &testInputCSV{i: 0, len: len(rows), rows: rows}
+}
+
+func (ic *testInputCSV) Read() ([]string, error) {
+	if ic.i == ic.len {
+		return nil, io.EOF
+	}
+	row := ic.rows[ic.i]
+	ic.i += 1
+	return row, nil
+}
+func (ic *testInputCSV) ReadAll() ([][]string, error) {
+	if ic.i == ic.len {
+		return nil, io.EOF
+	}
+	ic.i = ic.len
+	return ic.rows[ic.i:], nil
 }
 
 func assertRowEqual(got, want []string) error {
