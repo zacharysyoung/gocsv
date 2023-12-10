@@ -64,10 +64,6 @@ func (ic *testInputCsv) ReadAll() ([][]string, error) {
 	return rows, nil
 }
 
-func (ic *testInputCsv) getRows() [][]string {
-	return ic.rows
-}
-
 func assertRowEqual(got, want []string) error {
 	if len(got) != len(want) {
 		return fmt.Errorf("got %d fields; want %d", len(got), len(want))
