@@ -17,17 +17,31 @@ func (toc *testOutputCsv) Write(row []string) error {
 }
 
 type testInputCSV struct {
-	i    int
-	len  int
-	rows [][]string
+	rows    [][]string // all rows
+	i       int        // index of next row in rows to read/start from
+	numRows int        // record len of rows during init
 }
 
-func newTestInputCSV(rows [][]string) *testInputCSV {
-	return &testInputCSV{i: 0, len: len(rows), rows: rows}
+// newTestInputCSV prepares a testInputCSV, copying all of inputRows.
+func newTestInputCSV(inputRows [][]string) *testInputCSV {
+	_len := len(inputRows)
+
+	_rows := make([][]string, _len)
+	for i, x := range inputRows {
+		_row := make([]string, len(x))
+		copy(_row, x)
+		_rows[i] = _row
+	}
+
+	return &testInputCSV{
+		rows:    _rows,
+		i:       0,
+		numRows: _len,
+	}
 }
 
 func (ic *testInputCSV) Read() ([]string, error) {
-	if ic.i == ic.len {
+	if ic.i == ic.numRows {
 		return nil, io.EOF
 	}
 	row := ic.rows[ic.i]
@@ -35,11 +49,12 @@ func (ic *testInputCSV) Read() ([]string, error) {
 	return row, nil
 }
 func (ic *testInputCSV) ReadAll() ([][]string, error) {
-	if ic.i == ic.len {
+	if ic.i == ic.numRows {
 		return nil, io.EOF
 	}
-	ic.i = ic.len
-	return ic.rows[ic.i:], nil
+	records := ic.rows[ic.i:]
+	ic.i = ic.numRows
+	return records, nil
 }
 
 func assertRowEqual(got, want []string) error {
