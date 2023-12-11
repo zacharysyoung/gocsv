@@ -22,6 +22,11 @@ type InputCsv struct {
 	hasBom    bool
 }
 
+// NewInputCsv creates an InputCsv from the named file,
+// or stdin if filename is "-".
+// The presence of a UTF-8 BOM is recorded, and can be
+// passed to the OutputCsv writer to preserve the BOM in
+// the output stream.
 func NewInputCsv(filename string) (ic *InputCsv, err error) {
 	var f *os.File
 	if filename == "-" {
@@ -33,7 +38,7 @@ func NewInputCsv(filename string) (ic *InputCsv, err error) {
 		}
 	}
 
-	ic, err = icFromReader(f)
+	ic, err = fromReader(f)
 	if err != nil {
 		return
 	}
@@ -43,7 +48,7 @@ func NewInputCsv(filename string) (ic *InputCsv, err error) {
 	return
 }
 
-func icFromReader(r io.Reader) (ic *InputCsv, err error) {
+func fromReader(r io.Reader) (ic *InputCsv, err error) {
 	ic = new(InputCsv)
 
 	ic.bufReader = bufio.NewReader(r)
