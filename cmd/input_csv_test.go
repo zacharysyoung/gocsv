@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -18,6 +20,120 @@ func TestNewInputCsv(t *testing.T) {
 	err = ic.Close()
 	if err != nil {
 		t.Error("Unexpected error from close", err)
+	}
+}
+
+var (
+	sCSV = strings.TrimSpace(`
+Col1,Col2
+r1c1,r1c2
+r2c1,r2c2
+`)
+	wantRows = [][]string{
+		{"Col1", "Col2"},
+		{"r1c1", "r1c2"},
+		{"r2c1", "r2c2"},
+	}
+)
+
+// Create new InputCsv with filename (from temp file).
+func TestInputFile(t *testing.T) {
+	// create temp file  ------------------------------------------------------
+	//  https://stackoverflow.com/a/46365584/246801
+	tmpf, err := os.CreateTemp("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpf.Name())
+
+	if _, err = tmpf.WriteString(sCSV); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tmpf.Seek(0, 0); err != nil {
+		t.Fatal(err)
+	}
+	// ------------------------------------------------------------------------
+
+	ic, err := NewInputCsv(tmpf.Name())
+	if err != nil {
+		t.Errorf("NewInputCsv(%v)=%v; want nil", tmpf.Name(), err)
+	}
+
+	gotRows, err := ic.ReadAll()
+	if err != nil {
+		t.Errorf("ic.ReadAll()=_,%v; want _,nil", err)
+	}
+	if err := assertRowsEqual(wantRows, gotRows); err != nil {
+		t.Error(err)
+	}
+}
+
+// Create new InputCsv with filename="-" (stdin).
+func TestInputStdin(t *testing.T) {
+	// mock Stdin  ------------------------------------------------------------
+	//   https://stackoverflow.com/a/64518829/246801
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = w.Write([]byte(sCSV))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w.Close()
+
+	defer func(v *os.File) { os.Stdin = v }(os.Stdin)
+	os.Stdin = r
+	// ------------------------------------------------------------------------
+
+	ic, err := NewInputCsv("-")
+	if err != nil {
+		t.Errorf("NewInputCsv(\"-\")=%v,%v; wanted ic, nil", ic, nil)
+	}
+
+	gotRows, err := ic.ReadAll()
+	if err != nil {
+		t.Errorf("ic.ReadAll()=_,%v; want _,nil", err)
+	}
+	if err := assertRowsEqual(wantRows, gotRows); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestInputUTF8Bom(t *testing.T) {
+	// mock Stdin  ------------------------------------------------------------
+	//   https://stackoverflow.com/a/64518829/246801
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = w.Write([]byte(BOM_STRING + sCSV))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w.Close()
+
+	defer func(v *os.File) { os.Stdin = v }(os.Stdin)
+	os.Stdin = r
+	// ------------------------------------------------------------------------
+
+	ic, err := NewInputCsv("-")
+	if err != nil {
+		t.Errorf("NewInputCsv(\"-\")=%v,%v; wanted ic, nil", ic, nil)
+	}
+
+	gotRows, err := ic.ReadAll()
+	if err != nil {
+		t.Errorf("ic.ReadAll()=_,%v; want _,nil", err)
+	}
+	if err := assertRowsEqual(wantRows, gotRows); err != nil {
+		t.Error(err)
+	}
+
+	if ic.hasBom != true {
+		t.Errorf("InputCsv didn't see UTF-8 BOM; it should have")
 	}
 }
 
