@@ -55,7 +55,7 @@ func fromReader(r io.Reader) (ic *InputCsv, err error) {
 	ic.reader = csv.NewReader(ic.bufReader)
 	delimiter := os.Getenv("GOCSV_DELIMITER")
 	if delimiter != "" {
-		ic.reader.Comma = GetDelimiterFromString(delimiter)
+		ic.reader.Comma = GetDelimiterFromStringOrPanic(delimiter)
 	}
 	err = ic.handleBom()
 	return
