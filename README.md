@@ -265,7 +265,7 @@ Arguments:
 - `--equals` (optional, shorthand `-eq`) String to match against.
 - `--regex` (optional) Regular expression to use to match against. See [Regular Expression Syntax](#regular-expression-syntax) for the syntax.
 - `--case-insensitive` (optional, shorthand `-i`) When using the `--regex` flag, use this flag to specify a case insensitive match rather than the default case sensitive match.
-- `--gt` , `--gte`, `--lt`, `--lte` (optional) Compare against a number.
+- `--gt` , `--gte`, `--lt`, `--lte` (optional) Compare against a number or inferred datetime.
 - `--exclude` (optional) Exclude rows that match. Default is to include.
 
 Note that one of `--regex`, `--equals` (`-eq`), `--gt` , `--gte`, `--lt`, or `--lte` must be specified.

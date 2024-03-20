@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -148,15 +149,24 @@ func ParseDateOrPanic(elem string) time.Time {
 	return t
 }
 
-func ParseDate(elem string) (time.Time, error) {
-	patterns := []string{
-		"2006-01-02",
-		"2006-1-2",
-		"1/2/2006",
-		"01/02/2006",
+var layouts []string
+
+func init() {
+	if layout := os.Getenv("GOCSV_TIMELAYOUT"); layout != "" {
+		layouts = []string{layout}
+	} else {
+		layouts = []string{
+			"2006-01-02",
+			"2006-1-2",
+			"1/2/2006",
+			"01/02/2006",
+		}
 	}
-	for _, pattern := range patterns {
-		t, err := time.Parse(pattern, elem)
+}
+
+func ParseDate(elem string) (time.Time, error) {
+	for _, layout := range layouts {
+		t, err := time.Parse(layout, elem)
 		if err == nil {
 			return t, nil
 		}
