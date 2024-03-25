@@ -1,8 +1,6 @@
 package cmd
 
-import (
-	"io"
-)
+import "io"
 
 type Command interface {
 	Run(io.Reader, io.Writer, ...string) error
