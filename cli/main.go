@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/zacharysyoung/gocsv/pkg/cmds"
-	"github.com/zacharysyoung/gocsv/pkg/cmds/view"
+	"github.com/zacharysyoung/gocsv/pkg/cmd"
+	"github.com/zacharysyoung/gocsv/pkg/cmd/view"
 )
 
-var subCommands = map[string]cmds.Command{
+var commands = map[string]cmd.Command{
 	"view": view.View{},
 }
 
 func main() {
 	r := os.Stdin
 	w := os.Stdout
-	for name, sc := range subCommands {
+	for name, sc := range commands {
 		if os.Args[1] == name {
 			args := []string{}
 			if len(os.Args) > 2 {
@@ -37,6 +37,6 @@ func errorOut(msg string, err error) {
 	} else {
 		msg = fmt.Sprintf("error: %v", err)
 	}
-	fmt.Fprintf(os.Stderr, msg)
-	os.Exit(2)
+	fmt.Fprintln(os.Stderr, msg)
+	os.Exit(1)
 }

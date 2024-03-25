@@ -1,4 +1,4 @@
-package cmds
+package cmd
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/tools/txtar"
 
-	"github.com/zacharysyoung/gocsv/pkg/cmds/view"
+	"github.com/zacharysyoung/gocsv/pkg/cmd/view"
 )
 
 func TestCmds(t *testing.T) {
