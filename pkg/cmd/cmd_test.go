@@ -29,5 +29,4 @@ func TestCmds(t *testing.T) {
 	if got != want {
 		t.Errorf("\ngot:\n%s\nwant:\n%s", got, want)
 	}
-
 }
