@@ -1,0 +1,11 @@
+-- input.csv --
+Col1,Col2
+1,foo
+2,bar
+3.0,baz
+-- defaults --
+-- want --
+Col1, Col2
+   1, foo
+   2, bar
+ 3.0, baz
