@@ -40,3 +40,35 @@ Col1
 -- want --
 Col1  
 🤓🤓🤓...
+-- input --
+Col1,Col2,Col3
+1,longish,a
+2,"line1
+line2",b
+3.0,foo,c
+-- multiline default --
+-- want --
+Col1 Col2      Col3
+   1 longisher a   
+   2 line1     b   
+     line2         
+ 3.0 foo       c   
+-- multiline markdown --
+-- want --
+| Col1 | Col2      | Col3 |
+| ---: | --------- | ---- |
+|    1 | longisher | a    |
+|    2 | line1...  | b    |
+|  3.0 | foo       | c    |
+-- multiline box --
+-- want --
++------+---------+------+
+| Col1 | Col2    | Col3 |
++------+---------+------+
+| 1    | longish | a    |
++------+---------+------+
+| 2    | line1   | b    |
+|      | line2   |      |
++------+---------+------+
+| 3.0  | foo     | c    |
++------+---------+------+
