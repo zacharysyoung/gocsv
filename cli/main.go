@@ -5,17 +5,12 @@ import (
 	"os"
 
 	"github.com/zacharysyoung/gocsv/pkg/cmd"
-	"github.com/zacharysyoung/gocsv/pkg/cmd/view"
 )
-
-var commands = map[string]cmd.Command{
-	"view": view.View{},
-}
 
 func main() {
 	r := os.Stdin
 	w := os.Stdout
-	for name, sc := range commands {
+	for name, sc := range cmd.Commands {
 		if os.Args[1] == name {
 			args := []string{}
 			if len(os.Args) > 2 {

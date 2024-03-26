@@ -1,11 +1,19 @@
--- input.csv --
-Col1,Col2
-1,foo
-2,bar
-3.0,baz
+-- input --
+Col1,Col2,Col3
+1,longish,a
+2,short,b
+3.0,foo,c
 -- defaults --
 -- want --
-Col1, Col2
-   1, foo
-   2, bar
- 3.0, baz
+Col1, Col2   , Col3
+   1, longish, a   
+   2, short  , b   
+ 3.0, foo    , c   
+-- as markdown --
+-md
+-- want --
+| Col1 | Col2    | Col3 |
+| ---: | ------- | ---- |
+|    1 | longish | a    |
+|    2 | short   | b    |
+|  3.0 | foo     | c    |
