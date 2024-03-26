@@ -42,10 +42,9 @@ func (View) Run(r io.Reader, w io.Writer, args ...string) error {
 				widths[i] = *wflag
 				cap = true
 			}
-
 		}
 		if cap {
-			capColWidths(recs, *wflag)
+			truncateCells(recs, *wflag)
 		}
 	}
 
@@ -102,6 +101,8 @@ func printMarkdown(w io.Writer, recs [][]string, widths []int, types []inferredT
 	}
 }
 
+// getColWidths returns a slice of the widths of the widest
+// cell in each column of recs.
 func getColWidths(recs [][]string) []int {
 	widths := make([]int, len(recs[0]))
 	for _, rec := range recs {
@@ -114,7 +115,9 @@ func getColWidths(recs [][]string) []int {
 	return widths
 }
 
-func capColWidths(recs [][]string, maxw int) {
+// truncateCells truncates cells wider than maxw.  The final
+// width of a truncated cell accounts for "..." being appended.
+func truncateCells(recs [][]string, maxw int) {
 	for i := range recs {
 		for j := range recs[i] {
 			r := []rune(recs[i][j])
@@ -125,10 +128,10 @@ func capColWidths(recs [][]string, maxw int) {
 	}
 }
 
-// pad pads x with n-number spaces; left-justify strings,
-// right-justify all other inferredTypes.
-func pad(x string, t inferredType, n int) string {
-	if t == stringType {
+// pad pads x with n-number spaces; left-justify if it==stringType,
+// right-justify otherwise.
+func pad(x string, it inferredType, n int) string {
+	if it == stringType {
 		n *= -1
 	}
 	return fmt.Sprintf("%*s", n, x)
