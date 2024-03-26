@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 )
 
@@ -13,10 +12,6 @@ type Command interface {
 
 var Commands = map[string]Command{
 	"view": View{},
-}
-
-func setOSArgs(args ...string) {
-	os.Args = append([]string{"cmd"}, args...)
 }
 
 // rows wraps a set of records, for printing in test failures.

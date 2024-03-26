@@ -5,36 +5,59 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 )
 
 type View struct{}
 
-var (
-	mdflag = flag.Bool("md", false, "print as (extended) Markdown table")
-)
+func usage() {
+	fmt.Fprintln(os.Stderr, "usage: view [-md] [-w] [file]")
+	flag.PrintDefaults()
+	os.Exit(2)
+}
 
 func (View) Run(r io.Reader, w io.Writer, args ...string) error {
-	setOSArgs(args...)
-	flag.Parse()
+	var (
+		cmd    = flag.NewFlagSet("view", flag.ExitOnError)
+		mdflag = cmd.Bool("md", false, "print as (extended) Markdown table")
+		wflag  = cmd.Int("w", 0, "cap the width of printed cells; minimum of 3")
+	)
+
+	flag.Usage = usage
+	cmd.Parse(args)
 
 	recs, err := csv.NewReader(r).ReadAll()
 	if err != nil {
 		return err
 	}
 
+	widths := getColWidths(recs)
+	types := inferCols(recs[1:])
+
+	if *wflag > 3 {
+		cap := false
+		for i := range widths {
+			if widths[i] > *wflag {
+				widths[i] = *wflag
+				cap = true
+			}
+
+		}
+		if cap {
+			capColWidths(recs, *wflag)
+		}
+	}
+
 	if *mdflag {
-		printMarkdown(w, recs)
+		printMarkdown(w, recs, widths, types)
 	} else {
-		printSimple(w, recs)
+		printSimple(w, recs, widths, types)
 	}
 	return nil
 }
 
-func printSimple(w io.Writer, recs [][]string) {
-	widths := maxWidths(recs)
-	types := inferCols(recs[1:])
-
+func printSimple(w io.Writer, recs [][]string, widths []int, types []inferredType) {
 	sep := ""
 	for i, x := range recs[0] {
 		fmt.Fprintf(w, "%s%s", sep, pad(x, stringType, widths[i]))
@@ -52,10 +75,7 @@ func printSimple(w io.Writer, recs [][]string) {
 	}
 }
 
-func printMarkdown(w io.Writer, recs [][]string) {
-	widths := maxWidths(recs)
-	types := inferCols(recs[1:])
-
+func printMarkdown(w io.Writer, recs [][]string, widths []int, types []inferredType) {
 	for i, x := range recs[0] {
 		fmt.Fprintf(w, "| %s ", pad(x, stringType, widths[i]))
 	}
@@ -82,7 +102,7 @@ func printMarkdown(w io.Writer, recs [][]string) {
 	}
 }
 
-func maxWidths(recs [][]string) []int {
+func getColWidths(recs [][]string) []int {
 	widths := make([]int, len(recs[0]))
 	for _, rec := range recs {
 		for i, x := range rec {
@@ -92,6 +112,17 @@ func maxWidths(recs [][]string) []int {
 		}
 	}
 	return widths
+}
+
+func capColWidths(recs [][]string, maxw int) {
+	for i := range recs {
+		for j := range recs[i] {
+			r := []rune(recs[i][j])
+			if n := len(r); n > maxw {
+				recs[i][j] = fmt.Sprintf("%s...", (string(r[:maxw-3])))
+			}
+		}
+	}
 }
 
 // pad pads x with n-number spaces; left-justify strings,

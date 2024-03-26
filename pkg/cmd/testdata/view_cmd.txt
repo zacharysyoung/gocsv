@@ -17,3 +17,26 @@ Col1, Col2   , Col3
 |    1 | longish | a    |
 |    2 | short   | b    |
 |  3.0 | foo     | c    |
+-- max_width --
+-w=6
+-- want --
+Col1, Col2  , Col3
+   1, lon..., a   
+   2, short , b   
+ 3.0, foo   , c   
+-- max_width_markdown --
+-w=6 -md
+-- want --
+| Col1 | Col2   | Col3 |
+| ---: | ------ | ---- |
+|    1 | lon... | a    |
+|    2 | short  | b    |
+|  3.0 | foo    | c    |
+-- input --
+Col1
+🤓🤓🤓🤓🤓🤓🤓🤓
+-- max_width_non_ascii --
+-w=6
+-- want --
+Col1  
+🤓🤓🤓...
