@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"strconv"
@@ -45,23 +46,29 @@ func inferType(x string) inferredType {
 	}
 }
 
-func inferCols(rows [][]string) []inferredType {
-	types := make([]inferredType, len(rows[0]))
-
-	for i, x := range rows[0] {
-		types[i] = inferType(x)
+func inferCols(recs [][]string, cols []int) []inferredType {
+	if cols == nil {
+		cols = make([]int, len(recs[0]))
+		for i := range recs[0] {
+			cols[i] = i
+		}
 	}
-	if len(rows) == 1 {
+
+	types := make([]inferredType, len(cols))
+	for i, xi := range cols {
+		types[i] = inferType(recs[0][xi])
+	}
+	if len(recs) == 1 {
 		return types
 	}
 
 	var t inferredType
-	for _, row := range rows[1:] {
-		for i, x := range row {
-			if types[i] != stringType {
-				t = inferType(x)
-				if t != types[i] {
-					types[i] = stringType
+	for i := 1; i < len(recs); i++ {
+		for j, jx := range cols {
+			if types[j] != stringType {
+				t = inferType(recs[i][jx])
+				if t != types[j] {
+					types[j] = stringType
 				}
 			}
 		}
@@ -92,6 +99,16 @@ func toBool(x string) (bool, error) {
 	return false, errors.New("not a bool")
 }
 
+func compareBools(a, b bool) int {
+	if a && !b {
+		return -1
+	}
+	if !a && b {
+		return 1
+	}
+	return 0
+}
+
 var layouts = []string{
 	"2006-1-2",
 	"2006-01-02",
@@ -111,4 +128,37 @@ func toTime(x string) (time.Time, error) {
 		}
 	}
 	return time.Time{}, errors.New("not a time")
+}
+
+func compare1(a, b any, it inferredType) int {
+	switch it {
+	case boolType:
+		return compareBools(a.(bool), b.(bool))
+	case numberType:
+		return cmp.Compare(a.(float64), b.(float64))
+	case timeType:
+		return a.(time.Time).Compare(b.(time.Time))
+	default:
+		return cmp.Compare(a.(string), b.(string))
+	}
+}
+
+func compare2(a, b string, it inferredType) int {
+	switch it {
+	case boolType:
+		x, _ := toBool(a)
+		y, _ := toBool(b)
+		return compareBools(x, y)
+	case numberType:
+		x, _ := toNumber(a)
+		y, _ := toNumber(b)
+		return cmp.Compare(x, y)
+	case timeType:
+		x, _ := toTime(a)
+		y, _ := toTime(b)
+		return x.Compare(y)
+	default:
+		return cmp.Compare(a, b)
+	}
+
 }

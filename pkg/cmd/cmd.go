@@ -19,14 +19,7 @@ type rows [][]string
 
 // String prints a pretty rectangle from rows.
 func (rows rows) String() string {
-	widths := make([]int, len(rows[0]))
-	for _, row := range rows {
-		for i, x := range row {
-			if n := len(x); n > widths[i] {
-				widths[i] = n
-			}
-		}
-	}
+	widths := getColWidths(rows)
 
 	var sb strings.Builder
 	sb.WriteString("[ ")

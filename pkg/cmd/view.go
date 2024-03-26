@@ -33,7 +33,7 @@ func (View) Run(r io.Reader, w io.Writer, args ...string) error {
 	}
 
 	widths := getColWidths(recs)
-	types := inferCols(recs[1:])
+	types := inferCols(recs[1:], nil)
 
 	if *wflag > 3 {
 		cap := false

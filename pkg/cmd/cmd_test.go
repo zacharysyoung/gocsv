@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -60,5 +61,22 @@ func TestCmds(t *testing.T) {
 				})
 			}
 		})
+	}
+}
+
+func TestRowsStringer(t *testing.T) {
+	rows := rows{
+		{"Col1", "Col2"},
+		{"foo", "12345"},
+		{"barbaz", "2.0"},
+	}
+	want := `
+[   Col1,  Col2
+     foo, 12345
+  barbaz,   2.0 ]`
+	want = strings.TrimPrefix(want, "\n")
+
+	if got := fmt.Sprint(rows); got != want {
+		t.Errorf("\ngot\n%q\nwant\n%q", got, want)
 	}
 }
