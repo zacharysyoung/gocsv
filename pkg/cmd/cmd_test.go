@@ -49,6 +49,7 @@ func TestCmds(t *testing.T) {
 					args := strings.Split(flagLine, " ")
 					i++
 					want := string(a.Files[i].Data)
+					want = strings.ReplaceAll(want, "$\n", "\n")
 					i++
 
 					w := &bytes.Buffer{}

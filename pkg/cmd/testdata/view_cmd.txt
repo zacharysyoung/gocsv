@@ -1,74 +1,77 @@
+Use an optional '$' to visually mark the end of
+a line; and also prevent auto whitespace trimmers.
 -- input --
 Col1,Col2,Col3
 1,longish,a
-2,short,b
-3.0,foo,c
+2,short,bb
+3.0,foo,ccc
 -- defaults --
 -- want --
-Col1, Col2   , Col3
-   1, longish, a   
-   2, short  , b   
- 3.0, foo    , c   
+Col1, Col2,    Col3$
+   1, longish, a   $
+   2, short,   bb  $
+ 3.0, foo,     ccc $
 -- as markdown --
 -md
 -- want --
 | Col1 | Col2    | Col3 |
 | ---: | ------- | ---- |
 |    1 | longish | a    |
-|    2 | short   | b    |
-|  3.0 | foo     | c    |
+|    2 | short   | bb   |
+|  3.0 | foo     | ccc  |
 -- max_width --
 -maxw=6
 -- want --
-Col1, Col2  , Col3
-   1, lon..., a   
-   2, short , b   
- 3.0, foo   , c   
+Col1, Col2,   Col3$
+   1, lon..., a   $
+   2, short,  bb  $
+ 3.0, foo,    ccc $
 -- max_width_markdown --
 -maxw=6 -md
 -- want --
 | Col1 | Col2   | Col3 |
 | ---: | ------ | ---- |
 |    1 | lon... | a    |
-|    2 | short  | b    |
-|  3.0 | foo    | c    |
+|    2 | short  | bb   |
+|  3.0 | foo    | ccc  |
 -- input --
 Col1
-🤓🤓🤓🤓🤓🤓🤓🤓
+®©℗™℠℃℉№
 -- max_width_non_ascii --
 -maxw=6
 -- want --
-Col1  
-🤓🤓🤓...
+Col1  $
+®©℗...$
 -- input --
 Col1,Col2,Col3
 1,longish,a
 2,"line1
-line2",b
-3.0,foo,c
+line2",bb
+3.0,foo,ccc
 -- multiline default --
 -- want --
-Col1 Col2      Col3
-   1 longisher a   
-   2 line1     b   
-     line2         
- 3.0 foo       c   
+Col1, Col2,     Col3$
+   1, longish,  a   $
+   2, line1..., bb  $
+ 3.0, foo,      ccc $
 -- multiline markdown --
+-md
 -- want --
 | Col1 | Col2      | Col3 |
 | ---: | --------- | ---- |
-|    1 | longisher | a    |
-|    2 | line1...  | b    |
-|  3.0 | foo       | c    |
+|    1 | longish   | a    |
+|    2 | line1...  | bb   |
+|  3.0 | foo       | ccc  |
 -- multiline box --
+-box
 -- want --
 +------+---------+------+
 | Col1 | Col2    | Col3 |
 +------+---------+------+
-| 1    | longish | a    |
+|    1 | longish | a    |
 +------+---------+------+
-| 2    | line1   | b    |
+|    2 | line1   | bb   |
 |      | line2   |      |
 +------+---------+------+
-| 3.0  | foo     | c    |
+|  3.0 | foo     | ccc  |
 +------+---------+------+

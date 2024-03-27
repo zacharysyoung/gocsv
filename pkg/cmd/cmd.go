@@ -18,21 +18,19 @@ var Commands = map[string]Command{
 type rows [][]string
 
 // String prints a pretty rectangle from rows.
-func (rows rows) String() string {
-	widths := getColWidths(rows)
+func (recs rows) String() string {
+	widths := getColWidths(recs)
 
 	var sb strings.Builder
 	sb.WriteString("[ ")
 	pre := ""
 	nl := ""
-	for _, row := range rows {
+	for i := range recs {
 		sb.WriteString(nl)
 		sb.WriteString(pre)
 		sep := ""
-		for i, x := range row {
-			if _, err := sb.WriteString(fmt.Sprintf("%s%*s", sep, widths[i], x)); err != nil {
-				panic(err)
-			}
+		for j := range recs[i] {
+			sb.WriteString(fmt.Sprintf("%s%*s", sep, widths[j], recs[i][j]))
 			sep = ", "
 		}
 		pre = "  "
