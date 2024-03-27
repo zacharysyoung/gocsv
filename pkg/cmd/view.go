@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"encoding/csv"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -21,8 +23,20 @@ func (View) Run(r io.Reader, w io.Writer, args ...string) error {
 	var (
 		cmd    = flag.NewFlagSet("view", flag.ExitOnError)
 		mdflag = cmd.Bool("md", false, "print as (extended) Markdown table")
-		wflag  = cmd.Int("w", 0, "cap the width of printed cells; minimum of 3")
+
+		wflag int
 	)
+	cmd.Func("maxw", "cap the width of printed cells; minimum of 3", func(s string) error {
+		var err error
+		wflag, err = strconv.Atoi(s)
+		if err != nil {
+			return err
+		}
+		if wflag < 3 {
+			return errors.New("must be minimum of 3")
+		}
+		return nil
+	})
 
 	flag.Usage = usage
 	cmd.Parse(args)
@@ -35,16 +49,16 @@ func (View) Run(r io.Reader, w io.Writer, args ...string) error {
 	widths := getColWidths(recs)
 	types := inferCols(recs[1:], nil)
 
-	if *wflag > 3 {
+	if wflag >= 3 {
 		cap := false
 		for i := range widths {
-			if widths[i] > *wflag {
-				widths[i] = *wflag
+			if widths[i] > wflag {
+				widths[i] = wflag
 				cap = true
 			}
 		}
 		if cap {
-			truncateCells(recs, *wflag)
+			truncateCells(recs, wflag)
 		}
 	}
 
