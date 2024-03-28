@@ -17,14 +17,7 @@ clean() {
 }
 
 test() {
-    run=$1
-    path='./pkg/cmd'
-
-    if [ -z "$run" ]; then
-        go test $path
-    else
-        go test -run "$run" $path
-    fi
+    go test ./pkg/cmd $@
 }
 
 case $1 in
