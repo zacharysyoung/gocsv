@@ -57,11 +57,11 @@ Col1, Col2,     Col3$
 -- multiline markdown --
 -md
 -- want --
-| Col1 | Col2      | Col3 |
-| ---: | --------- | ---- |
-|    1 | longish   | a    |
-|    2 | line1...  | bb   |
-|  3.0 | foo       | ccc  |
+| Col1 | Col2     | Col3 |
+| ---: | -------- | ---- |
+|    1 | longish  | a    |
+|    2 | line1... | bb   |
+|  3.0 | foo      | ccc  |
 -- multiline box --
 -box
 -- want --

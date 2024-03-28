@@ -25,18 +25,27 @@ func (View) Run(r io.Reader, w io.Writer, args ...string) error {
 		cmd     = flag.NewFlagSet("view", flag.ExitOnError)
 		mdflag  = cmd.Bool("md", false, "print as (extended) Markdown table")
 		boxflag = cmd.Bool("box", false, "print complete cells in simple ascii boxes")
-		wflag   int
+
+		maxwflag, maxhflag int = -1, -1
+
+		err error
 	)
 	cmd.Func("maxw", "cap the width of printed cells; minimum of 3", func(s string) error {
-		var err error
-		wflag, err = strconv.Atoi(s)
+		maxwflag, err = strconv.Atoi(s)
 		if err != nil {
 			return err
 		}
-		if wflag < 3 {
+		if maxwflag < 3 {
 			return errors.New("must be minimum of 3")
 		}
 		return nil
+	})
+	cmd.Func("maxh", "cap the height of printed multiline cells; can only be used with -box", func(s string) error {
+		if !*boxflag {
+			return errors.New("can only be used with -box")
+		}
+		maxhflag, err = strconv.Atoi(s)
+		return err
 	})
 
 	flag.Usage = usage
@@ -47,21 +56,19 @@ func (View) Run(r io.Reader, w io.Writer, args ...string) error {
 		return err
 	}
 
-	widths := getColWidths(recs)
+	if !*boxflag {
+		maxhflag = 1
+	}
+
 	types := inferCols(recs[1:], nil)
 
-	if wflag >= 3 {
-		cap := false
-		for i := range widths {
-			if widths[i] > wflag {
-				widths[i] = wflag
-				cap = true
-			}
-		}
-		if cap {
-			truncateCells(recs, wflag)
+	for i := range recs {
+		for j := range recs[i] {
+			recs[i][j] = truncate(recs[i][j], maxwflag, maxhflag)
 		}
 	}
+
+	widths := getColWidths(recs)
 
 	if *mdflag {
 		printMarkdown(w, recs, widths, types)
@@ -75,6 +82,8 @@ func (View) Run(r io.Reader, w io.Writer, args ...string) error {
 }
 
 func printSimple(w io.Writer, recs [][]string, widths []int, types []inferredType) {
+	const term = "\n"
+
 	sep, comma := "", ","
 	for i, x := range recs[0] {
 		if i == len(recs[0])-1 {
@@ -83,7 +92,7 @@ func printSimple(w io.Writer, recs [][]string, widths []int, types []inferredTyp
 		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, stringType, widths[i]))
 		sep = " "
 	}
-	fmt.Fprint(w, "\n")
+	fmt.Fprint(w, term)
 
 	for i := 1; i < len(recs); i++ {
 		sep, comma = "", ","
@@ -94,34 +103,36 @@ func printSimple(w io.Writer, recs [][]string, widths []int, types []inferredTyp
 			fmt.Fprintf(w, "%s%s", sep, pad(x, comma, types[j], widths[j]))
 			sep = " "
 		}
-		fmt.Fprint(w, "\n")
+		fmt.Fprint(w, term)
 	}
 }
 
 func printMarkdown(w io.Writer, recs [][]string, widths []int, types []inferredType) {
+	const term = "|\n"
+
 	for i, x := range recs[0] {
 		fmt.Fprintf(w, "| %s ", pad(x, "", stringType, widths[i]))
 	}
-	fmt.Fprint(w, "|\n")
+	fmt.Fprint(w, term)
 
+	var x string
 	for i, t := range types {
 		n := widths[i]
-		var cell string
 		switch t {
 		case stringType:
-			cell = strings.Repeat("-", n)
+			x = strings.Repeat("-", n)
 		default:
-			cell = strings.Repeat("-", n-1) + ":"
+			x = strings.Repeat("-", n-1) + ":"
 		}
-		fmt.Fprintf(w, "| %s ", cell)
+		fmt.Fprintf(w, "| %s ", x)
 	}
-	fmt.Fprint(w, "|\n")
+	fmt.Fprint(w, term)
 
 	for _, rec := range recs[1:] {
 		for i := range rec {
 			fmt.Fprintf(w, "| %s ", pad(rec[i], "", types[i], widths[i]))
 		}
-		fmt.Fprint(w, "|\n")
+		fmt.Fprint(w, term)
 	}
 }
 
@@ -129,27 +140,45 @@ func printMarkdown(w io.Writer, recs [][]string, widths []int, types []inferredT
 // cell in each column of recs.
 func getColWidths(recs [][]string) []int {
 	widths := make([]int, len(recs[0]))
-	for _, rec := range recs {
-		for i, x := range rec {
-			if n := len(x); n > widths[i] {
-				widths[i] = n
+	for i := range recs {
+		for j := range recs[i] {
+			if n := len([]rune(recs[i][j])); n > widths[j] {
+				widths[j] = n
 			}
 		}
 	}
 	return widths
 }
 
-// truncateCells truncates cells wider than maxw.  The final
-// width of a truncated cell accounts for "..." being appended.
-func truncateCells(recs [][]string, maxw int) {
-	for i := range recs {
-		for j := range recs[i] {
-			r := []rune(recs[i][j])
-			if n := len(r); n > maxw {
-				recs[i][j] = fmt.Sprintf("%s...", (string(r[:maxw-3])))
+// truncate truncates x if wider than maxw and cuts multiline
+// values down to maxh lines.  The final width of lines accounts
+// for "..." being appended if truncated.
+func truncate(x string, maxw, maxh int) string {
+	s := strings.Split(x, "\n")
+	cuth := false
+	if maxh > 0 && len(s) > maxh {
+		s = s[:maxh]
+		cuth = true
+	}
+
+	for i, x := range s {
+		// abbreivate x if wider than maxw
+		r := []rune(x)
+		if maxw > 3 && len(r) > maxw {
+			x = string(r[:maxw-3]) + "..."
+		}
+		// abbreviate x if last line after multiline cut, and not already abbreivated
+		if i == len(s)-1 && cuth && x[len(x)-3:] != "..." {
+			if maxw > 3 && len(r)+3 > maxw {
+				x = string(r[:maxw-3]) + "..."
+			} else {
+				x += "..."
 			}
 		}
+		s[i] = x
 	}
+
+	return strings.Join(s, "\n")
 }
 
 // pad pads x with n-number spaces; left-justify if it==stringType,
