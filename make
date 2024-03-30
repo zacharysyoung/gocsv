@@ -31,7 +31,8 @@ case $1 in
         build
         ;;
     test)
-        test "$2"
+        shift
+        test $@
         ;;
     *)
         echo 'usage: make [ clean | build ]'

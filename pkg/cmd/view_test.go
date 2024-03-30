@@ -22,7 +22,7 @@ func TestPad(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		if got := pad(tc.x, tc.suf, tc.it, tc.n); got != tc.want {
+		if got := pad(tc.x, tc.suf, tc.n, tc.it); got != tc.want {
 			t.Errorf("pad(%q, %q, %s, %d) = %q != %q", tc.x, tc.suf, tc.it, tc.n, got, tc.want)
 		}
 	}
@@ -79,13 +79,17 @@ func TestTruncate(t *testing.T) {
 }
 
 func TestLinebreaks(t *testing.T) {
-	testCases := []struct{ in, want [][]string }{
+	testCases := []struct {
+		in, want [][]string
+		newlines newlines
+	}{
 		{
 			in: [][]string{
 				{"1", "2\na"}},
 			want: [][]string{
 				{"1", "2"},
 				{"", "a"}},
+			newlines: newlines{1: nil},
 		},
 		{
 			in: [][]string{
@@ -96,6 +100,7 @@ func TestLinebreaks(t *testing.T) {
 				{"", "a"},
 				{"3", "4"},
 				{"b", ""}},
+			newlines: newlines{1: nil, 3: nil},
 		},
 		{
 			in: [][]string{
@@ -107,6 +112,7 @@ func TestLinebreaks(t *testing.T) {
 				{"3", "4"},
 				{"b", "d"},
 				{"", "e"}},
+			newlines: newlines{1: nil, 3: nil, 4: nil},
 		},
 		{
 			in: [][]string{
@@ -118,12 +124,16 @@ func TestLinebreaks(t *testing.T) {
 				{"3", "4"},
 				{"", "d"},
 				{"", "e"}},
+			newlines: newlines{1: nil, 3: nil, 4: nil},
 		},
 	}
 	for _, tc := range testCases {
-		got := splitLinebreaks(tc.in)
+		got, newlines := splitLinebreaks(tc.in)
 		if !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("splitLinebreaks\ngot\n%+q\nwant\n%+q", got, tc.want)
+		}
+		if !reflect.DeepEqual(newlines, tc.newlines) {
+			t.Errorf("splitLinebreak(%q)\ngot  %v\nwant %v", tc.in, newlines, tc.newlines)
 		}
 	}
 }

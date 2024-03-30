@@ -14,12 +14,6 @@ import (
 
 type View struct{}
 
-func usage() {
-	fmt.Fprintln(os.Stderr, "usage: view [-md] [-w] [file]")
-	flag.PrintDefaults()
-	os.Exit(2)
-}
-
 func (View) Run(r io.Reader, w io.Writer, args ...string) error {
 	var (
 		cmd     = flag.NewFlagSet("view", flag.ExitOnError)
@@ -36,19 +30,28 @@ func (View) Run(r io.Reader, w io.Writer, args ...string) error {
 			return err
 		}
 		if maxwflag < 3 {
-			return errors.New("must be minimum of 3")
+			return errors.New("minimum of 3")
 		}
 		return nil
 	})
-	cmd.Func("maxh", "cap the height of printed multiline cells; can only be used with -box", func(s string) error {
-		if !*boxflag {
-			return errors.New("can only be used with -box")
-		}
+	cmd.Func("maxh", "cap the height of printed multiline cells; must be preceded by -box; minimum of 1", func(s string) error {
 		maxhflag, err = strconv.Atoi(s)
-		return err
+		if err != nil {
+			return err
+		}
+		if !*boxflag {
+			return errors.New("must be preceded by -box")
+		}
+		if maxhflag < 1 {
+			return errors.New("minimum of 1")
+		}
+		return nil
 	})
-
-	flag.Usage = usage
+	cmd.Usage = func() {
+		fmt.Fprintln(os.Stderr, "usage: view [-box [-maxh] | -md] [-maxw]")
+		flag.PrintDefaults()
+		os.Exit(2)
+	}
 	cmd.Parse(args)
 
 	recs, err := csv.NewReader(r).ReadAll()
@@ -61,19 +64,13 @@ func (View) Run(r io.Reader, w io.Writer, args ...string) error {
 	}
 
 	types := inferCols(recs[1:], nil)
-
-	for i := range recs {
-		for j := range recs[i] {
-			recs[i][j] = truncate(recs[i][j], maxwflag, maxhflag)
-		}
-	}
-
+	truncateCells(recs, maxwflag, maxhflag)
 	widths := getColWidths(recs)
 
 	if *mdflag {
 		printMarkdown(w, recs, widths, types)
 	} else if *boxflag {
-		fmt.Fprintln(w, "+------+\n| boxy |\n+------+")
+		printBoxes(w, recs, types)
 	} else {
 		printSimple(w, recs, widths, types)
 	}
@@ -89,7 +86,7 @@ func printSimple(w io.Writer, recs [][]string, widths []int, types []inferredTyp
 		if i == len(recs[0])-1 {
 			comma = ""
 		}
-		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, stringType, widths[i]))
+		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], stringType))
 		sep = " "
 	}
 	fmt.Fprint(w, term)
@@ -100,7 +97,7 @@ func printSimple(w io.Writer, recs [][]string, widths []int, types []inferredTyp
 			if j == len(recs[i])-1 {
 				comma = ""
 			}
-			fmt.Fprintf(w, "%s%s", sep, pad(x, comma, types[j], widths[j]))
+			fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[j], types[j]))
 			sep = " "
 		}
 		fmt.Fprint(w, term)
@@ -111,7 +108,7 @@ func printMarkdown(w io.Writer, recs [][]string, widths []int, types []inferredT
 	const term = "|\n"
 
 	for i, x := range recs[0] {
-		fmt.Fprintf(w, "| %s ", pad(x, "", stringType, widths[i]))
+		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], stringType))
 	}
 	fmt.Fprint(w, term)
 
@@ -130,9 +127,43 @@ func printMarkdown(w io.Writer, recs [][]string, widths []int, types []inferredT
 
 	for _, rec := range recs[1:] {
 		for i := range rec {
-			fmt.Fprintf(w, "| %s ", pad(rec[i], "", types[i], widths[i]))
+			fmt.Fprintf(w, "| %s ", pad(rec[i], "", widths[i], types[i]))
 		}
 		fmt.Fprint(w, term)
+	}
+}
+
+func printBoxes(w io.Writer, recs [][]string, types []inferredType) {
+	var newlines newlines
+	recs, newlines = splitLinebreaks(recs)
+	widths := getColWidths(recs)
+
+	const term = "|\n"
+	printHR := func() {
+		fmt.Fprint(w, "+")
+		for i := range widths {
+			fmt.Fprint(w, strings.Repeat("-", widths[i]+2))
+			fmt.Fprint(w, "+")
+		}
+		fmt.Fprint(w, "\n")
+	}
+
+	printHR()
+	for i, x := range recs[0] {
+		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], stringType))
+	}
+	fmt.Fprint(w, term)
+	printHR()
+
+	for i := 1; i < len(recs); i++ {
+		for j := range recs[i] {
+			fmt.Fprintf(w, "| %s ", pad(recs[i][j], "", widths[j], types[j]))
+		}
+		fmt.Fprint(w, term)
+		if _, ok := newlines[i+1]; ok {
+			continue
+		}
+		printHR()
 	}
 }
 
@@ -148,6 +179,14 @@ func getColWidths(recs [][]string) []int {
 		}
 	}
 	return widths
+}
+
+func truncateCells(recs [][]string, maxw, maxh int) {
+	for i := range recs {
+		for j := range recs[i] {
+			recs[i][j] = truncate(recs[i][j], maxw, maxh)
+		}
+	}
 }
 
 // truncate truncates x if wider than maxw and cuts multiline
@@ -181,11 +220,15 @@ func truncate(x string, maxw, maxh int) string {
 	return strings.Join(s, "\n")
 }
 
-// pad pads x with n-number spaces; left-justify if it==stringType,
-// right-justify otherwise.
-func pad(x, suf string, it inferredType, n int) string {
+func padCells(recs [][]string, suf string, widths []int, types []inferredType) {
+
+}
+
+// pad pads x and suf with n-number spaces.  Left-justify if
+// it is stringType, right-justify otherwise.
+func pad(x, suf string, n int, it inferredType) string {
 	if suf != "" {
-		n++
+		n += len([]rune(suf))
 	}
 	if it == stringType {
 		n *= -1
@@ -193,11 +236,16 @@ func pad(x, suf string, it inferredType, n int) string {
 	return fmt.Sprintf("%*s", n, x+suf)
 }
 
+// newlines keeps track of which lines were inserted
+// because of split mulitlines.
+type newlines map[int]interface{}
+
 // splitLinebreaks splits field-data with line breaks
 // by inserting new records into recs and copying the
 // excess multi-line values down.
 // E.g., [[a\nb c] [d e]] to [[a c][b  ][d e]]
-func splitLinebreaks(recs [][]string) [][]string {
+func splitLinebreaks(recs [][]string) ([][]string, newlines) {
+	newlines := make(newlines)
 	for i := 0; i < len(recs); {
 		grow := 0
 		for j := range recs[i] {
@@ -206,12 +254,14 @@ func splitLinebreaks(recs [][]string) [][]string {
 				if k > grow {
 					x := make([]string, len(recs[i]))
 					recs = slices.Insert(recs, i+k, x)
+					newlines[i+k] = nil
 					grow++
+
 				}
 				recs[i+k][j] = xs[k]
 			}
 		}
 		i += 1 + grow
 	}
-	return recs
+	return recs, newlines
 }
