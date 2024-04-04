@@ -46,18 +46,23 @@ func inferType(x string) inferredType {
 	}
 }
 
+// inferCols infers the types of 1-based cols of recs; panics
+// if recs or cols is empty.
 func inferCols(recs [][]string, cols []int) []inferredType {
-	if cols == nil {
-		cols = make([]int, len(recs[0]))
-		for i := range recs[0] {
-			cols[i] = i
-		}
+	switch {
+	case len(recs) == 0:
+		panic(errors.New("empty recs"))
+	case len(cols) == 0:
+		panic(errors.New("empty cols"))
 	}
+
+	cols = rebase0(cols)
 
 	types := make([]inferredType, len(cols))
 	for i, xi := range cols {
 		types[i] = inferType(recs[0][xi])
 	}
+
 	if len(recs) == 1 {
 		return types
 	}

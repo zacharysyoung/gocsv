@@ -40,65 +40,96 @@ func TestInferType(t *testing.T) {
 }
 
 func TestInferCols(t *testing.T) {
+	type cols []int
+	type types []inferredType
 	testCases := []struct {
 		name string
-		rows [][]string
-		cols []int
-		want []inferredType
+		rows rows
+		cols cols
+		want types
 	}{
 		{
 			name: "single uniform number",
-			rows: [][]string{{"1"}, {"1.0"}, {"-0"}},
-			cols: nil,
-			want: []inferredType{numberType},
+			rows: rows{
+				{"1"},
+				{"1.0"},
+				{"-0"},
+			},
+			cols: cols{1},
+			want: types{numberType},
 		},
 		{
 			name: "single uniform bool",
-			rows: [][]string{{"true"}, {"false"}, {"f"}},
-			cols: nil,
-			want: []inferredType{boolType},
+			rows: rows{
+				{"true"},
+				{"false"},
+				{"f"},
+			},
+			cols: cols{1},
+			want: types{boolType},
 		},
 		{
 			name: "single uniform string",
-			rows: [][]string{{"a"}, {"b"}, {"🤓"}},
-			cols: nil,
-			want: []inferredType{stringType},
+			rows: rows{
+				{"a"},
+				{"b"},
+				{"🤓"},
+			},
+			cols: cols{1},
+			want: types{stringType},
 		},
 		{
 			name: "single mixed string",
-			rows: [][]string{{"1"}, {"a"}, {"1"}},
-			cols: nil,
-			want: []inferredType{stringType},
+			rows: rows{
+				{"1"},
+				{"a"},
+				{"1"},
+			},
+			cols: cols{1},
+			want: types{stringType},
 		},
 		{
 			name: "multi mixed string",
-			rows: [][]string{
+			rows: rows{
 				{"1", "true"},
 				{"a", "false"},
 				{"1", "0"},
 			},
-			cols: nil,
-			want: []inferredType{
+			cols: cols{1, 2},
+			want: types{
 				stringType, stringType,
 			},
 		},
 		{
 			name: "specific columns",
-			rows: [][]string{
+			rows: rows{
 				{"1", "true", "1/10/2000"},
 				{"2", "false", "1/11/2000"},
 				{"3", "true", "1/12/2000"},
 			},
-			cols: []int{0, 2},
-			want: []inferredType{
+			cols: cols{1, 3},
+			want: types{
 				numberType, timeType,
+			},
+		},
+		{
+			name: "datetime mixed layouts",
+			rows: rows{
+				{"1/10/2000"},
+				{"2000-1-1"},
+				{"2000-01-01"},
+				{"01/12/2000"},
+			},
+			cols: cols{1},
+			want: types{
+				timeType,
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := inferCols(tc.rows, tc.cols); !reflect.DeepEqual(got, tc.want) {
+			if got := inferCols(tc.rows, tc.cols); !reflect.DeepEqual(types(got), tc.want) {
 				t.Errorf("\ninferCols(..., %v) for\n%s\ngot:  %v\nwant: %v", tc.cols, rows(tc.rows), got, tc.want)
 			}
 		})

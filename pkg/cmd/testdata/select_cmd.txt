@@ -1,0 +1,25 @@
+-- in --
+A, B, C, D
+1, 2, 3, 4
+-- defaults --
+-- want --
+A, B, C, D
+1, 2, 3, 4
+-- cols --
+{"Cols":[2, 3]}
+-- want --
+B, C
+2, 3
+-- rearranged --
+{"Cols":[3, 2]}
+-- want --
+C, B
+3, 2
+-- in --
+A, B, C, D
+1, 2, 3, 4
+-- exclude --
+{"Cols":[2, 3], "Exclude":true}
+-- want --
+A, D
+1, 4

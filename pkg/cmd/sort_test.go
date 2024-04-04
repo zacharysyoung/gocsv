@@ -7,12 +7,12 @@ import (
 
 func TestSort(t *testing.T) {
 	type cols []int
-	hdr := rows{{"C1", "C2", "C3"}}
 
 	for _, tc := range []struct {
-		rows rows
-		cols cols
-		want rows
+		rows  rows
+		cols  cols
+		order int
+		want  rows
 	}{
 		{
 			rows: rows{
@@ -20,7 +20,8 @@ func TestSort(t *testing.T) {
 				{"1", "b"},
 				{"2", "a"},
 			},
-			cols: cols{0},
+			cols:  cols{1},
+			order: 1,
 			want: rows{
 				{"1", "b"},
 				{"2", "c"},
@@ -29,14 +30,15 @@ func TestSort(t *testing.T) {
 		},
 		{
 			rows: rows{
-				{"3", "b"},
+				{"2", "c"},
 				{"1", "b"},
 				{"2", "a"},
 			},
-			cols: cols{1},
+			cols:  cols{1},
+			order: -1,
 			want: rows{
+				{"2", "c"},
 				{"2", "a"},
-				{"3", "b"},
 				{"1", "b"},
 			},
 		},
@@ -46,23 +48,48 @@ func TestSort(t *testing.T) {
 				{"1", "b"},
 				{"2", "a"},
 			},
-			cols: cols{0, 1},
+			cols:  cols{1, 2},
+			order: 1,
 			want: rows{
 				{"1", "b"},
 				{"2", "a"},
 				{"2", "c"},
+			},
+		},
+		{
+			rows: rows{
+				{"2", "b"},
+				{"2", "c"},
+				{"1", "b"},
+			},
+			cols:  cols{2, 1},
+			order: 1,
+			want: rows{
+				{"1", "b"},
+				{"2", "b"},
+				{"2", "c"},
+			},
+		},
+		{
+			rows: rows{
+				{"1", "b"},
+				{"2", "b"},
+				{"2", "c"},
+			},
+			cols:  cols{2, 1},
+			order: -1,
+			want: rows{
+				{"2", "c"},
+				{"2", "b"},
+				{"1", "b"},
 			},
 		},
 	} {
-		// prepend header for inferCols
-		in := append(hdr, tc.rows...)
-		sort2(in, tc.cols)
-		// chop header
-		in = in[1:]
-
+		// copy input
+		in := append(rows{}, tc.rows...)
+		sort(in, tc.cols, tc.order)
 		if !reflect.DeepEqual(in, tc.want) {
-			t.Errorf("sort1(\n%s, %v)\ngot\n%s\nwant\n%s", tc.rows, tc.cols, in, tc.want)
+			t.Errorf("sort(\n%s, %v,%d)\ngot\n%s\nwant\n%s", tc.rows, tc.cols, tc.order, in, tc.want)
 		}
 	}
-
 }

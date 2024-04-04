@@ -6,12 +6,11 @@ import (
 	"strings"
 )
 
-type Command interface {
-	Run(io.Reader, io.Writer, ...string) error
-}
+type SubCommander interface {
+	CheckConfig() error
+	Run(io.Reader, io.Writer) error
 
-var Commands = map[string]Command{
-	"view": View{},
+	fromJSON([]byte) error // test helper
 }
 
 // rows wraps a set of records, for printing in test failures.
@@ -38,4 +37,37 @@ func (recs rows) String() string {
 	}
 	sb.WriteString(" ]")
 	return sb.String()
+}
+
+// getColWidths returns a slice of the widths of the widest
+// cell in each column of recs.
+func getColWidths(recs [][]string) []int {
+	widths := make([]int, len(recs[0]))
+	for i := range recs {
+		for j := range recs[i] {
+			if n := len([]rune(recs[i][j])); n > widths[j] {
+				widths[j] = n
+			}
+		}
+	}
+	return widths
+}
+
+// base1 returns friendly 1-based indexes for the columns
+// in header.
+func base1(header []string) (newCols []int) {
+	newCols = make([]int, len(header))
+	for i := range header {
+		newCols[i] = i + 1
+	}
+	return
+}
+
+// rebase0 turns friendly 1-based indexes to 0-based indexes
+// (for actually working with the recs).
+func rebase0(cols []int) (newCols []int) {
+	for _, x := range cols {
+		newCols = append(newCols, x-1)
+	}
+	return
 }
