@@ -16,7 +16,7 @@ import (
 
 var quoteflag = flag.Bool("quote", false, "print errors with quoted rows instead of pretty-printed")
 
-var subcommands = map[string]SubCommander{
+var subcommands = map[string]testSubCommander{
 	"select": &Select{},
 	"sort":   &Sort{},
 }
@@ -72,6 +72,10 @@ func TestCmds(t *testing.T) {
 					if err := cmd.fromJSON(data); err != nil {
 						t.Fatal(err)
 					}
+					if err := cmd.CheckConfig(); err != nil {
+						t.Fatal(err)
+					}
+
 					r := bytes.NewReader(cache)
 					buf1, buf2 := &bytes.Buffer{}, &bytes.Buffer{}
 					normalizeCSV(r, buf1)
@@ -111,14 +115,14 @@ func TestRowsStringer(t *testing.T) {
 	}
 }
 
-func TestRebase0(t *testing.T) {
+func TestBase0Cols(t *testing.T) {
 	for _, tc := range []struct {
 		in, want []int
 	}{
 		{[]int{1, 2}, []int{0, 1}},
 		{[]int{1, 1}, []int{0, 0}},
 	} {
-		if got := rebase0(tc.in); !reflect.DeepEqual(got, tc.want) {
+		if got := Base0Cols(tc.in); !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("rebase0(%v) = %v; want %v", tc.in, got, tc.want)
 		}
 	}
@@ -163,14 +167,14 @@ func viewCSV(r io.Reader, w io.Writer) error {
 		cols[i] = i + 1
 	}
 
-	types := inferCols(recs[1:], cols)
+	types := InferCols(recs[1:], cols)
 	widths := getColWidths(recs)
 
-	pad := func(x, suf string, n int, it inferredType) string {
+	pad := func(x, suf string, n int, it InferredType) string {
 		if suf != "" {
 			n += len([]rune(suf))
 		}
-		if it == stringType {
+		if it == StringType {
 			n *= -1
 		}
 		return fmt.Sprintf("%*s", n, x+suf)
@@ -183,7 +187,7 @@ func viewCSV(r io.Reader, w io.Writer) error {
 		if i == len(recs[0])-1 {
 			comma = ""
 		}
-		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], stringType))
+		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], StringType))
 		sep = " "
 	}
 	fmt.Fprint(w, term)

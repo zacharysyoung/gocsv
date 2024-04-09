@@ -38,7 +38,7 @@ func (sc *Select) Run(r io.Reader, w io.Writer) error {
 		return err
 	}
 
-	cols := base1(header)
+	cols := Base1Cols(header)
 	if len(sc.Cols) > 0 {
 		if sc.Exclude {
 			cols = exclude(cols, sc.Cols)

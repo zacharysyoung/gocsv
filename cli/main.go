@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -17,17 +18,19 @@ type streamer func(...string) (io.Reader, io.Writer, cmd.SubCommander)
 var streamers = map[string]streamer{
 	"select": newSelect,
 	"sort":   newSort,
+	"view":   newView,
 }
 
 func main() {
 	name := os.Args[1]
+
 	if newfunc, ok := streamers[name]; ok {
 		r, w, sc := newfunc(os.Args[2:]...)
 		if err := sc.Run(r, w); err != nil {
 			errorOut("", err)
 		}
+		return
 	}
-
 }
 
 func newSelect(args ...string) (io.Reader, io.Writer, cmd.SubCommander) {
@@ -50,6 +53,48 @@ func newSort(args ...string) (io.Reader, io.Writer, cmd.SubCommander) {
 	fs.Parse(args)
 	cols, _ := parseCols(*colsflag)
 	return os.Stdin, os.Stdout, cmd.NewSort(cols, *revflag, false)
+}
+
+func newView(args ...string) (io.Reader, io.Writer, cmd.SubCommander) {
+	var (
+		fs      = flag.NewFlagSet("view", flag.ExitOnError)
+		mdflag  = fs.Bool("md", false, "print as (extended) Markdown table")
+		boxflag = fs.Bool("box", false, "print complete cells in simple ascii boxes")
+
+		maxwflag, maxhflag int = -1, -1
+
+		err error
+	)
+	fs.Func("maxw", "cap the width of printed cells; minimum of 3", func(s string) error {
+		maxwflag, err = strconv.Atoi(s)
+		if err != nil {
+			return err
+		}
+		if maxwflag < 3 {
+			return errors.New("minimum of 3")
+		}
+		return nil
+	})
+	fs.Func("maxh", "cap the height of printed multiline cells; must be preceded by -box; minimum of 1", func(s string) error {
+		maxhflag, err = strconv.Atoi(s)
+		if err != nil {
+			return err
+		}
+		if !*boxflag {
+			return errors.New("must be preceded by -box")
+		}
+		if maxhflag < 1 {
+			return errors.New("minimum of 1")
+		}
+		return nil
+	})
+	fs.Usage = func() {
+		fmt.Fprintln(os.Stderr, "usage: view [-box [-maxh] | -md] [-maxw]")
+		flag.PrintDefaults()
+		os.Exit(2)
+	}
+	fs.Parse(args)
+	return os.Stdin, os.Stdout, &View{box: *boxflag, md: *mdflag, maxh: maxhflag, maxw: maxwflag}
 }
 
 func parseCols(s string) ([]int, error) {
@@ -97,6 +142,11 @@ func parseCols(s string) ([]int, error) {
 		}
 	}
 	return cols, nil
+}
+
+func errorBadFlags(err error) {
+	fmt.Fprintln(os.Stderr, err)
+	os.Exit(2)
 }
 
 func errorOut(msg string, err error) {

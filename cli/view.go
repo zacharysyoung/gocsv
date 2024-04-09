@@ -2,83 +2,50 @@ package main
 
 import (
 	"encoding/csv"
-	"errors"
-	"flag"
 	"fmt"
 	"io"
-	"os"
 	"slices"
-	"strconv"
 	"strings"
+
+	"github.com/zacharysyoung/gocsv/pkg/cmd"
 )
 
-type View struct{}
+type View struct {
+	box, md    bool
+	maxh, maxw int
+}
 
-func (View) Run(r io.Reader, w io.Writer, args ...string) error {
-	var (
-		cmd     = flag.NewFlagSet("view", flag.ExitOnError)
-		mdflag  = cmd.Bool("md", false, "print as (extended) Markdown table")
-		boxflag = cmd.Bool("box", false, "print complete cells in simple ascii boxes")
+func (sc *View) CheckConfig() error {
+	return nil
+}
 
-		maxwflag, maxhflag int = -1, -1
-
-		err error
-	)
-	cmd.Func("maxw", "cap the width of printed cells; minimum of 3", func(s string) error {
-		maxwflag, err = strconv.Atoi(s)
-		if err != nil {
-			return err
-		}
-		if maxwflag < 3 {
-			return errors.New("minimum of 3")
-		}
-		return nil
-	})
-	cmd.Func("maxh", "cap the height of printed multiline cells; must be preceded by -box; minimum of 1", func(s string) error {
-		maxhflag, err = strconv.Atoi(s)
-		if err != nil {
-			return err
-		}
-		if !*boxflag {
-			return errors.New("must be preceded by -box")
-		}
-		if maxhflag < 1 {
-			return errors.New("minimum of 1")
-		}
-		return nil
-	})
-	cmd.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: view [-box [-maxh] | -md] [-maxw]")
-		flag.PrintDefaults()
-		os.Exit(2)
-	}
-	cmd.Parse(args)
-
+func (sc *View) Run(r io.Reader, w io.Writer) error {
 	recs, err := csv.NewReader(r).ReadAll()
 	if err != nil {
 		return err
 	}
 
-	if !*boxflag {
-		maxhflag = 1
+	if sc.box {
+		sc.maxw = 1
 	}
 
-	types := inferCols(recs[1:], nil)
-	truncateCells(recs, maxwflag, maxhflag)
+	types := cmd.InferCols(recs[1:], cmd.Base1Cols(recs[0]))
+	truncateCells(recs, sc.maxw, sc.maxh)
 	widths := getColWidths(recs)
 
-	if *mdflag {
-		printMarkdown(w, recs, widths, types)
-	} else if *boxflag {
-		printBoxes(w, recs, types)
-	} else {
+	switch {
+	default:
 		printSimple(w, recs, widths, types)
+	case sc.md:
+		printMarkdown(w, recs, widths, types)
+	case sc.box:
+		printBoxes(w, recs, types)
 	}
 
 	return nil
 }
 
-func printSimple(w io.Writer, recs [][]string, widths []int, types []inferredType) {
+func printSimple(w io.Writer, recs [][]string, widths []int, types []cmd.InferredType) {
 	const term = "\n"
 
 	sep, comma := "", ","
@@ -86,7 +53,7 @@ func printSimple(w io.Writer, recs [][]string, widths []int, types []inferredTyp
 		if i == len(recs[0])-1 {
 			comma = ""
 		}
-		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], stringType))
+		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], cmd.StringType))
 		sep = " "
 	}
 	fmt.Fprint(w, term)
@@ -104,11 +71,11 @@ func printSimple(w io.Writer, recs [][]string, widths []int, types []inferredTyp
 	}
 }
 
-func printMarkdown(w io.Writer, recs [][]string, widths []int, types []inferredType) {
+func printMarkdown(w io.Writer, recs [][]string, widths []int, types []cmd.InferredType) {
 	const term = "|\n"
 
 	for i, x := range recs[0] {
-		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], stringType))
+		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], cmd.StringType))
 	}
 	fmt.Fprint(w, term)
 
@@ -116,7 +83,7 @@ func printMarkdown(w io.Writer, recs [][]string, widths []int, types []inferredT
 	for i, t := range types {
 		n := widths[i]
 		switch t {
-		case stringType:
+		case cmd.StringType:
 			x = strings.Repeat("-", n)
 		default:
 			x = strings.Repeat("-", n-1) + ":"
@@ -133,7 +100,7 @@ func printMarkdown(w io.Writer, recs [][]string, widths []int, types []inferredT
 	}
 }
 
-func printBoxes(w io.Writer, recs [][]string, types []inferredType) {
+func printBoxes(w io.Writer, recs [][]string, types []cmd.InferredType) {
 	var newlines newlines
 	recs, newlines = splitLinebreaks(recs)
 	widths := getColWidths(recs)
@@ -150,7 +117,7 @@ func printBoxes(w io.Writer, recs [][]string, types []inferredType) {
 
 	printHR()
 	for i, x := range recs[0] {
-		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], stringType))
+		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], cmd.StringType))
 	}
 	fmt.Fprint(w, term)
 	printHR()
@@ -220,17 +187,17 @@ func truncate(x string, maxw, maxh int) string {
 	return strings.Join(s, "\n")
 }
 
-func padCells(recs [][]string, suf string, widths []int, types []inferredType) {
+func padCells(recs [][]string, suf string, widths []int, types []cmd.InferredType) {
 
 }
 
 // pad pads x and suf with n-number spaces.  Left-justify if
 // it is stringType, right-justify otherwise.
-func pad(x, suf string, n int, it inferredType) string {
+func pad(x, suf string, n int, it cmd.InferredType) string {
 	if suf != "" {
 		n += len([]rune(suf))
 	}
-	if it == stringType {
+	if it == cmd.StringType {
 		n *= -1
 	}
 	return fmt.Sprintf("%*s", n, x+suf)

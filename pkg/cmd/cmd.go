@@ -9,8 +9,11 @@ import (
 type SubCommander interface {
 	CheckConfig() error
 	Run(io.Reader, io.Writer) error
+}
 
-	fromJSON([]byte) error // test helper
+type testSubCommander interface {
+	SubCommander
+	fromJSON([]byte) error
 }
 
 // rows wraps a set of records, for printing in test failures.
@@ -53,9 +56,9 @@ func getColWidths(recs [][]string) []int {
 	return widths
 }
 
-// base1 returns friendly 1-based indexes for the columns
+// Base1Cols returns friendly 1-based indexes for the columns
 // in header.
-func base1(header []string) (newCols []int) {
+func Base1Cols(header []string) (newCols []int) {
 	newCols = make([]int, len(header))
 	for i := range header {
 		newCols[i] = i + 1
@@ -63,9 +66,8 @@ func base1(header []string) (newCols []int) {
 	return
 }
 
-// rebase0 turns friendly 1-based indexes to 0-based indexes
-// (for actually working with the recs).
-func rebase0(cols []int) (newCols []int) {
+// Base0Cols turns friendly 1-based indexes to 0-based indexes.
+func Base0Cols(cols []int) (newCols []int) {
 	for _, x := range cols {
 		newCols = append(newCols, x-1)
 	}

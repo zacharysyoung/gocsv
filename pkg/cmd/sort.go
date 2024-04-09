@@ -40,7 +40,7 @@ func (sc *Sort) Run(r io.Reader, w io.Writer) error {
 
 	cols := sc.Cols
 	if cols == nil {
-		cols = base1(recs[0])
+		cols = Base1Cols(recs[0])
 	}
 
 	order := 1
@@ -63,8 +63,8 @@ func sort(recs [][]string, cols []int, order int) {
 	if order != -1 && order != 1 {
 		panic(errors.New("order must be -1 or 1"))
 	}
-	types := inferCols(recs, cols)
-	cols = rebase0(cols)
+	types := InferCols(recs, cols)
+	cols = Base0Cols(cols)
 	slices.SortFunc(recs, func(a, b []string) int {
 		for i, ix := range cols {
 			if x := compare2(a[ix], b[ix], types[i]); x != 0 {

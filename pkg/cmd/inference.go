@@ -9,46 +9,46 @@ import (
 	"time"
 )
 
-type inferredType int
+type InferredType int
 
 const (
-	numberType inferredType = iota
-	boolType
-	timeType // date and datetime
-	stringType
+	NumberType InferredType = iota
+	BoolType
+	TimeType // date and datetime
+	StringType
 )
 
-func (it inferredType) String() string {
+func (it InferredType) String() string {
 	switch it {
 	default:
 		panic(fmt.Errorf("bad inferredType value: %#v", it))
-	case numberType:
+	case NumberType:
 		return "Number"
-	case boolType:
+	case BoolType:
 		return "Bool"
-	case timeType:
+	case TimeType:
 		return "Datetime"
-	case stringType:
+	case StringType:
 		return "String"
 	}
 }
 
-func inferType(x string) inferredType {
+func inferType(x string) InferredType {
 	switch {
 	default:
-		return stringType
+		return StringType
 	case isNumber(x):
-		return numberType
+		return NumberType
 	case isBool(x):
-		return boolType
+		return BoolType
 	case isTime(x):
-		return timeType
+		return TimeType
 	}
 }
 
-// inferCols infers the types of 1-based cols of recs; panics
+// InferCols infers the types of 1-based cols of recs; panics
 // if recs or cols is empty.
-func inferCols(recs [][]string, cols []int) []inferredType {
+func InferCols(recs [][]string, cols []int) []InferredType {
 	switch {
 	case len(recs) == 0:
 		panic(errors.New("empty recs"))
@@ -56,9 +56,9 @@ func inferCols(recs [][]string, cols []int) []inferredType {
 		panic(errors.New("empty cols"))
 	}
 
-	cols = rebase0(cols)
+	cols = Base0Cols(cols)
 
-	types := make([]inferredType, len(cols))
+	types := make([]InferredType, len(cols))
 	for i, xi := range cols {
 		types[i] = inferType(recs[0][xi])
 	}
@@ -67,13 +67,13 @@ func inferCols(recs [][]string, cols []int) []inferredType {
 		return types
 	}
 
-	var t inferredType
+	var t InferredType
 	for i := 1; i < len(recs); i++ {
 		for j, jx := range cols {
-			if types[j] != stringType {
+			if types[j] != StringType {
 				t = inferType(recs[i][jx])
 				if t != types[j] {
-					types[j] = stringType
+					types[j] = StringType
 				}
 			}
 		}
@@ -135,30 +135,30 @@ func toTime(x string) (time.Time, error) {
 	return time.Time{}, errors.New("not a time")
 }
 
-func compare1(a, b any, it inferredType) int {
+func compare1(a, b any, it InferredType) int {
 	switch it {
-	case boolType:
+	case BoolType:
 		return compareBools(a.(bool), b.(bool))
-	case numberType:
+	case NumberType:
 		return cmp.Compare(a.(float64), b.(float64))
-	case timeType:
+	case TimeType:
 		return a.(time.Time).Compare(b.(time.Time))
 	default:
 		return cmp.Compare(a.(string), b.(string))
 	}
 }
 
-func compare2(a, b string, it inferredType) int {
+func compare2(a, b string, it InferredType) int {
 	switch it {
-	case boolType:
+	case BoolType:
 		x, _ := toBool(a)
 		y, _ := toBool(b)
 		return compareBools(x, y)
-	case numberType:
+	case NumberType:
 		x, _ := toNumber(a)
 		y, _ := toNumber(b)
 		return cmp.Compare(x, y)
-	case timeType:
+	case TimeType:
 		x, _ := toTime(a)
 		y, _ := toTime(b)
 		return x.Compare(y)

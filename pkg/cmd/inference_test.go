@@ -9,26 +9,26 @@ import (
 func TestInferType(t *testing.T) {
 	testCases := []struct {
 		s    string
-		want inferredType
+		want InferredType
 	}{
-		{"-1.0", numberType},
-		{"-1", numberType},
-		{"0", numberType},
-		{"0.0", numberType},
-		{"1", numberType},
-		{"1.0", numberType},
-		{"True", boolType},
-		{"true", boolType},
-		{"TrUe", boolType},
-		{"T", boolType},
-		{"false", boolType},
-		{"False", boolType},
-		{"falSE", boolType},
-		{"F", boolType},
-		{"2000-1-1", timeType},
-		{"2000-01-01", timeType},
-		{"1/1/2000", timeType},
-		{"01/01/2000", timeType},
+		{"-1.0", NumberType},
+		{"-1", NumberType},
+		{"0", NumberType},
+		{"0.0", NumberType},
+		{"1", NumberType},
+		{"1.0", NumberType},
+		{"True", BoolType},
+		{"true", BoolType},
+		{"TrUe", BoolType},
+		{"T", BoolType},
+		{"false", BoolType},
+		{"False", BoolType},
+		{"falSE", BoolType},
+		{"F", BoolType},
+		{"2000-1-1", TimeType},
+		{"2000-01-01", TimeType},
+		{"1/1/2000", TimeType},
+		{"01/01/2000", TimeType},
 	}
 
 	for _, tc := range testCases {
@@ -41,7 +41,7 @@ func TestInferType(t *testing.T) {
 
 func TestInferCols(t *testing.T) {
 	type cols []int
-	type types []inferredType
+	type types []InferredType
 	testCases := []struct {
 		name string
 		rows rows
@@ -56,7 +56,7 @@ func TestInferCols(t *testing.T) {
 				{"-0"},
 			},
 			cols: cols{1},
-			want: types{numberType},
+			want: types{NumberType},
 		},
 		{
 			name: "single uniform bool",
@@ -66,7 +66,7 @@ func TestInferCols(t *testing.T) {
 				{"f"},
 			},
 			cols: cols{1},
-			want: types{boolType},
+			want: types{BoolType},
 		},
 		{
 			name: "single uniform string",
@@ -76,7 +76,7 @@ func TestInferCols(t *testing.T) {
 				{"🤓"},
 			},
 			cols: cols{1},
-			want: types{stringType},
+			want: types{StringType},
 		},
 		{
 			name: "single mixed string",
@@ -86,7 +86,7 @@ func TestInferCols(t *testing.T) {
 				{"1"},
 			},
 			cols: cols{1},
-			want: types{stringType},
+			want: types{StringType},
 		},
 		{
 			name: "multi mixed string",
@@ -97,7 +97,7 @@ func TestInferCols(t *testing.T) {
 			},
 			cols: cols{1, 2},
 			want: types{
-				stringType, stringType,
+				StringType, StringType,
 			},
 		},
 		{
@@ -109,7 +109,7 @@ func TestInferCols(t *testing.T) {
 			},
 			cols: cols{1, 3},
 			want: types{
-				numberType, timeType,
+				NumberType, TimeType,
 			},
 		},
 		{
@@ -122,14 +122,14 @@ func TestInferCols(t *testing.T) {
 			},
 			cols: cols{1},
 			want: types{
-				timeType,
+				TimeType,
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := inferCols(tc.rows, tc.cols); !reflect.DeepEqual(types(got), tc.want) {
+			if got := InferCols(tc.rows, tc.cols); !reflect.DeepEqual(types(got), tc.want) {
 				t.Errorf("\ninferCols(..., %v) for\n%s\ngot:  %v\nwant: %v", tc.cols, rows(tc.rows), got, tc.want)
 			}
 		})
@@ -162,36 +162,36 @@ func TestCompare(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		it   inferredType
+		it   InferredType
 		a, b any
 		want int
 	}{
-		{boolType, true, false, -1},
-		{boolType, true, true, 0},
-		{boolType, false, false, 0},
-		{boolType, false, true, 1},
+		{BoolType, true, false, -1},
+		{BoolType, true, true, 0},
+		{BoolType, false, false, 0},
+		{BoolType, false, true, 1},
 
-		{numberType, 1.0, 2.0, -1},
-		{numberType, 2.0, 2.0, 0},
-		{numberType, 2.0, 1.0, 1},
+		{NumberType, 1.0, 2.0, -1},
+		{NumberType, 2.0, 2.0, 0},
+		{NumberType, 2.0, 1.0, 1},
 
-		{timeType, jan1, jan2, -1},
-		{timeType, jan2, jan2, 0},
-		{timeType, jan2, jan1, 1},
+		{TimeType, jan1, jan2, -1},
+		{TimeType, jan2, jan2, 0},
+		{TimeType, jan2, jan1, 1},
 
-		{stringType, "a", "b", -1},
-		{stringType, "b", "b", 0},
-		{stringType, "b", "a", 1},
+		{StringType, "a", "b", -1},
+		{StringType, "b", "b", 0},
+		{StringType, "b", "a", 1},
 	} {
 		if got := compare1(tc.a, tc.b, tc.it); got != tc.want {
 			switch tc.it {
-			case numberType:
+			case NumberType:
 				t.Errorf("compare(%g, %g) got %d; want %d", tc.a, tc.b, got, tc.want)
-			case boolType:
+			case BoolType:
 				t.Errorf("compare(%t, %t) got %d; want %d", tc.a, tc.b, got, tc.want)
-			case stringType:
+			case StringType:
 				t.Errorf("compare(%q, %q) got %d; want %d", tc.a, tc.b, got, tc.want)
-			case timeType:
+			case TimeType:
 				t.Errorf("compare(%s, %s) got %d; want %d", tfmt(tc.a), tfmt(tc.b), got, tc.want)
 			}
 		}
