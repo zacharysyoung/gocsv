@@ -16,9 +16,7 @@ func NewSelect(cols []int, exclude bool) *Select {
 }
 
 func (sc *Select) fromJSON(p []byte) error {
-	if len(p) == 0 {
-		return nil
-	}
+	*sc = Select{}
 	return json.Unmarshal(p, sc)
 }
 

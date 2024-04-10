@@ -1,5 +1,5 @@
 Use an optional '$' to visually mark the end of
-a line; and also prevent auto whitespace trimmers.
+a line; and also prevent auto-whitespace trimmers.
 -- input --
 Col1,Col2,Col3
 1,longish,a

@@ -11,11 +11,6 @@ type SubCommander interface {
 	Run(io.Reader, io.Writer) error
 }
 
-type testSubCommander interface {
-	SubCommander
-	fromJSON([]byte) error
-}
-
 // rows wraps a set of records, for printing in test failures.
 type rows [][]string
 

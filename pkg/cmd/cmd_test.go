@@ -16,7 +16,14 @@ import (
 
 var quoteflag = flag.Bool("quote", false, "print errors with quoted rows instead of pretty-printed")
 
+type testSubCommander interface {
+	SubCommander
+
+	fromJSON([]byte) error // "zero out" the subcommand then configure it from JSON
+}
+
 var subcommands = map[string]testSubCommander{
+	"filter": &Filter{},
 	"select": &Select{},
 	"sort":   &Sort{},
 }
@@ -29,16 +36,13 @@ func TestCmds(t *testing.T) {
 	}
 
 	for _, file := range files {
-		cmdname := strings.TrimSuffix(filepath.Base(file), suffix)
-		if cmdname == "view" {
-			continue
-		}
-		cmd, ok := subcommands[cmdname]
-		if !ok {
-			t.Fatalf("could get not Command %s", cmdname)
+		fname := filepath.Base(file)
+		scName := strings.TrimSuffix(fname, suffix)
+		if _, ok := subcommands[scName]; !ok {
+			t.Fatalf("found test file %s, but no subcommand %s", fname, scName)
 		}
 
-		t.Run(cmdname, func(t *testing.T) {
+		t.Run(scName, func(t *testing.T) {
 			a, err := txtar.ParseFile(file)
 			if err != nil {
 				t.Fatal(err)
@@ -55,6 +59,7 @@ func TestCmds(t *testing.T) {
 				cache []byte // cache input for multiple test cases
 				i     = 0
 			)
+
 			for i < len(a.Files) {
 				if a.Files[i].Name == "in" {
 					cache = []byte(preprocess(a.Files[i].Data))
@@ -68,18 +73,21 @@ func TestCmds(t *testing.T) {
 				i++
 				t.Run(testname, func(t *testing.T) {
 					want := preprocess(wantb)
+					sc := subcommands[scName]
 
-					if err := cmd.fromJSON(data); err != nil {
-						t.Fatal(err)
+					if len(data) > 0 {
+						if err := sc.fromJSON(data); err != nil {
+							t.Fatal(err)
+						}
 					}
-					if err := cmd.CheckConfig(); err != nil {
+					if err := sc.CheckConfig(); err != nil {
 						t.Fatal(err)
 					}
 
 					r := bytes.NewReader(cache)
 					buf1, buf2 := &bytes.Buffer{}, &bytes.Buffer{}
 					normalizeCSV(r, buf1)
-					if err := cmd.Run(buf1, buf2); err != nil {
+					if err := sc.Run(buf1, buf2); err != nil {
 						t.Fatal(err)
 					}
 					viewCSV(buf2, buf1)
@@ -167,7 +175,16 @@ func viewCSV(r io.Reader, w io.Writer) error {
 		cols[i] = i + 1
 	}
 
-	types := InferCols(recs[1:], cols)
+	types := make([]InferredType, 0)
+	switch len(recs) {
+	default:
+		types = InferCols(recs[1:], cols)
+	case 1:
+		for range recs[0] {
+			types = append(types, StringType)
+		}
+	}
+
 	widths := getColWidths(recs)
 
 	pad := func(x, suf string, n int, it InferredType) string {

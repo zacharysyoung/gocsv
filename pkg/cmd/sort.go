@@ -19,9 +19,7 @@ func NewSort(cols []int, reversed, stably bool) *Sort {
 }
 
 func (sc *Sort) fromJSON(p []byte) error {
-	if len(p) == 0 {
-		return nil
-	}
+	*sc = Sort{}
 	return json.Unmarshal(p, sc)
 }
 

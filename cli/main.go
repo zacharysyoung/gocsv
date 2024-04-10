@@ -13,7 +13,7 @@ import (
 	"github.com/zacharysyoung/gocsv/pkg/cmd"
 )
 
-type streamer func(...string) (io.Reader, io.Writer, cmd.SubCommander)
+type streamer func(...string) (cmd.SubCommander, []string)
 
 var streamers = map[string]streamer{
 	"select": newSelect,
@@ -25,15 +25,36 @@ func main() {
 	name := os.Args[1]
 
 	if newfunc, ok := streamers[name]; ok {
-		r, w, sc := newfunc(os.Args[2:]...)
-		if err := sc.Run(r, w); err != nil {
+		sc, tailArgs := newfunc(os.Args[2:]...)
+
+		var (
+			r   io.Reader
+			err error
+		)
+		switch len(tailArgs) {
+		case 0:
+			r = os.Stdin
+		case 1:
+			if r, err = os.Open(tailArgs[0]); err != nil {
+				errorBadArgs(err)
+			}
+		default:
+			errorBadArgs(fmt.Errorf("got %d extra args; %s allows for only one named file", len(tailArgs), name))
+		}
+
+		if err = sc.CheckConfig(); err != nil {
+			errorBadArgs(err)
+		}
+
+		if err = sc.Run(r, os.Stdout); err != nil {
 			errorOut("", err)
 		}
+
 		return
 	}
 }
 
-func newSelect(args ...string) (io.Reader, io.Writer, cmd.SubCommander) {
+func newSelect(args ...string) (cmd.SubCommander, []string) {
 	var (
 		fs       = flag.NewFlagSet("select", flag.ExitOnError)
 		colsflag = fs.String("cols", "", "a range of columns to select, e.g., 1,3-5,2")
@@ -41,10 +62,10 @@ func newSelect(args ...string) (io.Reader, io.Writer, cmd.SubCommander) {
 	)
 	fs.Parse(args)
 	cols, _ := parseCols(*colsflag)
-	return os.Stdin, os.Stdout, cmd.NewSelect(cols, *exflag)
+	return cmd.NewSelect(cols, *exflag), fs.Args()
 }
 
-func newSort(args ...string) (io.Reader, io.Writer, cmd.SubCommander) {
+func newSort(args ...string) (cmd.SubCommander, []string) {
 	var (
 		fs       = flag.NewFlagSet("sort", flag.ExitOnError)
 		colsflag = fs.String("cols", "", "a range of columns to use as the sort key, e.g., 1,3-5,2")
@@ -52,10 +73,10 @@ func newSort(args ...string) (io.Reader, io.Writer, cmd.SubCommander) {
 	)
 	fs.Parse(args)
 	cols, _ := parseCols(*colsflag)
-	return os.Stdin, os.Stdout, cmd.NewSort(cols, *revflag, false)
+	return cmd.NewSort(cols, *revflag, false), fs.Args()
 }
 
-func newView(args ...string) (io.Reader, io.Writer, cmd.SubCommander) {
+func newView(args ...string) (cmd.SubCommander, []string) {
 	var (
 		fs      = flag.NewFlagSet("view", flag.ExitOnError)
 		mdflag  = fs.Bool("md", false, "print as (extended) Markdown table")
@@ -94,7 +115,7 @@ func newView(args ...string) (io.Reader, io.Writer, cmd.SubCommander) {
 		os.Exit(2)
 	}
 	fs.Parse(args)
-	return os.Stdin, os.Stdout, &View{box: *boxflag, md: *mdflag, maxh: maxhflag, maxw: maxwflag}
+	return &View{box: *boxflag, md: *mdflag, maxh: maxhflag, maxw: maxwflag}, fs.Args()
 }
 
 func parseCols(s string) ([]int, error) {
@@ -144,7 +165,7 @@ func parseCols(s string) ([]int, error) {
 	return cols, nil
 }
 
-func errorBadFlags(err error) {
+func errorBadArgs(err error) {
 	fmt.Fprintln(os.Stderr, err)
 	os.Exit(2)
 }

@@ -1,0 +1,41 @@
+-- in --
+H
+1
+A
+a
+-- eq --
+{"Col": 1, "Operator": "eq", "Value": "a"}
+-- want --
+H
+a
+-- greater-than --
+{"Col": 1, "Operator": "gt", "Value": "a"}
+-- want --
+H
+-- less-than --
+{"Col": 1, "Operator": "lt", "Value": "a"}
+-- want --
+H
+1
+A
+-- less-than case-insensitive --
+{"Col": 1, "Operator": "lt", "Value": "a", "CaseInsensitive": true}
+-- want --
+H
+1
+-- in --
+H
+1
+A
+a
+-- regex --
+{"Col": 1, "Operator": "re", "Value": "[^A]"}
+-- want --
+H
+1
+a
+-- regex case-insensitive --
+{"Col": 1, "Operator": "re", "Value": "[^A]", "CaseInsensitive": true}
+-- want --
+H
+1
