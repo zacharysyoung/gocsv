@@ -11,28 +11,28 @@ import (
 	"time"
 )
 
-type operator string
+type Operator string
 
 const (
-	ne  operator = "ne"
-	eq  operator = "eq"
-	gt  operator = "gt"
-	gte operator = "gte"
-	lt  operator = "lt"
-	lte operator = "lte"
+	Ne  Operator = "ne"
+	Eq  Operator = "eq"
+	Gt  Operator = "gt"
+	Gte Operator = "gte"
+	Lt  Operator = "lt"
+	Lte Operator = "lte"
 
-	re operator = "re"
+	Re Operator = "re"
 )
 
 type Filter struct {
 	Col             int // 1-based index of column to compare
-	Operator        operator
+	Operator        Operator
 	Value           string
 	CaseInsensitive bool // applies to any string comparison
 	Exclude         bool // only write non-matches
 }
 
-func NewFilter(col int, operator operator, val string, caseInsensitive, exclude bool) *Filter {
+func NewFilter(col int, operator Operator, val string, caseInsensitive, exclude bool) *Filter {
 	return &Filter{
 		Col:             col,
 		Operator:        operator,
@@ -56,12 +56,11 @@ func (sc *Filter) Run(r io.Reader, w io.Writer) error {
 		reMatcher *regexp.Regexp
 		err       error
 	)
-	if sc.Operator == re {
+	if sc.Operator == Re {
 		expr := sc.Value
 		if sc.CaseInsensitive {
 			expr = fmt.Sprintf("(?i)%s", expr)
 		}
-		fmt.Println(expr)
 		if reMatcher, err = regexp.Compile(expr); err != nil {
 			return err
 		}
@@ -95,7 +94,7 @@ func (sc *Filter) filter(recs [][]string, reMatcher *regexp.Regexp) [][]string {
 
 	col := Base0Cols([]int{sc.Col})[0]
 	switch sc.Operator {
-	case re:
+	case Re:
 		for i := len(recs) - 1; i >= 0; i-- {
 			matched := reMatcher.MatchString(recs[i][col])
 			matched = flip(matched)
@@ -124,62 +123,62 @@ func (sc *Filter) filter(recs [][]string, reMatcher *regexp.Regexp) [][]string {
 	return recs
 }
 
-func match(s string, op operator, val any, it InferredType) bool {
+func match(s string, op Operator, val any, it InferredType) bool {
 	switch it {
 	case StringType:
 		switch op {
-		case eq:
+		case Eq:
 			return s == val.(string)
-		case ne:
+		case Ne:
 			return s != val.(string)
-		case lt:
+		case Lt:
 			return s < val.(string)
-		case lte:
+		case Lte:
 			return s <= val.(string)
-		case gt:
+		case Gt:
 			return s > val.(string)
-		case gte:
+		case Gte:
 			return s >= val.(string)
 		}
 	case NumberType:
 		x, _ := toNumber(s)
 		switch op {
-		case eq:
+		case Eq:
 			return x == val.(float64)
-		case ne:
+		case Ne:
 			return x != val.(float64)
-		case lt:
+		case Lt:
 			return x < val.(float64)
-		case lte:
+		case Lte:
 			return x <= val.(float64)
-		case gt:
+		case Gt:
 			return x > val.(float64)
-		case gte:
+		case Gte:
 			return x >= val.(float64)
 		}
 	case TimeType:
 		a, _ := toTime(s)
 		b := val.(time.Time)
 		switch op {
-		case eq:
+		case Eq:
 			return a.Equal(b)
-		case ne:
+		case Ne:
 			return !a.Equal(b)
-		case lt:
+		case Lt:
 			return a.Before(b)
-		case lte:
+		case Lte:
 			return a.Before(b) || a.Equal(b)
-		case gt:
+		case Gt:
 			return a.After(b)
-		case gte:
+		case Gte:
 			return a.After(b) || a.Equal(b)
 		}
 	case BoolType:
 		x, _ := toBool(s)
 		switch op {
-		case eq:
+		case Eq:
 			return x == val.(bool)
-		case ne:
+		case Ne:
 			return x != val.(bool)
 		default:
 			panic(fmt.Errorf("%s not allowed for boolean filter", op))

@@ -33,3 +33,27 @@ func TestParseCols(t *testing.T) {
 		}
 	}
 }
+
+func TestSplitRange(t *testing.T) {
+	testCases := []struct {
+		s    string
+		want []int
+		err  error
+	}{
+		{"1-4", []int{1, 2, 3, 4}, nil},
+		{"9-7", []int{9, 8, 7}, nil},
+
+		{"1-a", nil, errors.New("some parsing error")},
+	}
+
+	for _, tc := range testCases {
+		got, err := splitRange(tc.s)
+		if err != nil && tc.err == nil {
+			t.Fatalf("splitRange(%q) got unexpected error %v", tc.s, err)
+		}
+
+		if !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("splitRange(%q) got %v; want %v", tc.s, got, tc.want)
+		}
+	}
+}

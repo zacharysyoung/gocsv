@@ -16,7 +16,7 @@ func TestFilter(t *testing.T) {
 
 	for _, tc := range []testCase{
 		{
-			sc: &Filter{Col: 1, Operator: eq, Value: "a", Exclude: false},
+			sc: &Filter{Col: 1, Operator: Eq, Value: "a", Exclude: false},
 			in: rows{
 				{"a"},
 				{"b"},
@@ -27,19 +27,7 @@ func TestFilter(t *testing.T) {
 			},
 		},
 		{
-			sc: &Filter{Col: 1, Operator: eq, Value: "a", Exclude: true},
-			in: rows{
-				{"a"},
-				{"b"},
-				{"c"},
-			},
-			want: rows{
-				{"b"},
-				{"c"},
-			},
-		},
-		{
-			sc: &Filter{Col: 1, Operator: gt, Value: "a", Exclude: false},
+			sc: &Filter{Col: 1, Operator: Eq, Value: "a", Exclude: true},
 			in: rows{
 				{"a"},
 				{"b"},
@@ -51,7 +39,19 @@ func TestFilter(t *testing.T) {
 			},
 		},
 		{
-			sc: &Filter{Col: 1, Operator: gt, Value: "a", Exclude: true},
+			sc: &Filter{Col: 1, Operator: Gt, Value: "a", Exclude: false},
+			in: rows{
+				{"a"},
+				{"b"},
+				{"c"},
+			},
+			want: rows{
+				{"b"},
+				{"c"},
+			},
+		},
+		{
+			sc: &Filter{Col: 1, Operator: Gt, Value: "a", Exclude: true},
 			in: rows{
 				{"a"},
 				{"b"},
@@ -81,36 +81,36 @@ func TestMatch(t *testing.T) {
 
 	type testCase struct {
 		s    string
-		op   operator
+		op   Operator
 		val  any
 		it   InferredType
 		want bool
 	}
 
 	testCases := []testCase{
-		{"1", eq, "1", StringType, true},
-		{"1", ne, "1", StringType, false},
+		{"1", Eq, "1", StringType, true},
+		{"1", Ne, "1", StringType, false},
 
-		{"a", eq, "a", StringType, true},
-		{"a", eq, "A", StringType, false},
+		{"a", Eq, "a", StringType, true},
+		{"a", Eq, "A", StringType, false},
 
-		{"1", lt, "A", StringType, true},
-		{"A", lt, "a", StringType, true},
-		{"1", lt, "a", StringType, true},
+		{"1", Lt, "A", StringType, true},
+		{"A", Lt, "a", StringType, true},
+		{"1", Lt, "a", StringType, true},
 
-		{"1.0", eq, 1.0, NumberType, true},
-		{"1", eq, 1.0, NumberType, true},
+		{"1.0", Eq, 1.0, NumberType, true},
+		{"1", Eq, 1.0, NumberType, true},
 
-		{"2000-01-02", eq, date(2000, 1, 2), TimeType, true},
-		{"2000-01-01", ne, date(2000, 1, 2), TimeType, true},
-		{"2000-01-02", lte, date(2000, 1, 2), TimeType, true},
-		{"2000-01-02", gte, date(2000, 1, 2), TimeType, true},
-		{"2000-01-01", lt, date(2000, 1, 2), TimeType, true},
-		{"2000-01-03", gt, date(2000, 1, 2), TimeType, true},
-		{"2000-01-02", gt, date(2000, 1, 2), TimeType, false},
+		{"2000-01-02", Eq, date(2000, 1, 2), TimeType, true},
+		{"2000-01-01", Ne, date(2000, 1, 2), TimeType, true},
+		{"2000-01-02", Lte, date(2000, 1, 2), TimeType, true},
+		{"2000-01-02", Gte, date(2000, 1, 2), TimeType, true},
+		{"2000-01-01", Lt, date(2000, 1, 2), TimeType, true},
+		{"2000-01-03", Gt, date(2000, 1, 2), TimeType, true},
+		{"2000-01-02", Gt, date(2000, 1, 2), TimeType, false},
 
-		{"true", eq, true, BoolType, true},
-		{"true", ne, true, BoolType, false},
+		{"true", Eq, true, BoolType, true},
+		{"true", Ne, true, BoolType, false},
 	}
 
 	for _, tc := range testCases {
@@ -124,8 +124,8 @@ func TestMatch(t *testing.T) {
 	}
 
 	for _, tc := range []testCase{
-		{"false", lt, false, BoolType, false},
-		{"false", gt, false, BoolType, false},
+		{"false", Lt, false, BoolType, false},
+		{"false", Gt, false, BoolType, false},
 	} {
 		name := fmt.Sprintf("%s_%s_%v", tc.s, tc.op, tc.val)
 		t.Run(name, func(t *testing.T) {
