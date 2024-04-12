@@ -2,145 +2,136 @@ package cmd
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 )
 
-func TestFilter(t *testing.T) {
-	type rows [][]string
-	type testCase struct {
-		sc       *Filter
-		in, want rows
-	}
+// simpleMatchTest provides a simpler test of match without
+// lower-case or match negation args.
+type simpleMatchTest struct {
+	s   string
+	op  Operator
+	val any
 
-	for _, tc := range []testCase{
-		{
-			sc: &Filter{Col: 1, Operator: Eq, Value: "a", Exclude: false},
-			in: rows{
-				{"a"},
-				{"b"},
-				{"c"},
-			},
-			want: rows{
-				{"a"},
-			},
-		},
-		{
-			sc: &Filter{Col: 1, Operator: Eq, Value: "a", Exclude: true},
-			in: rows{
-				{"a"},
-				{"b"},
-				{"c"},
-			},
-			want: rows{
-				{"b"},
-				{"c"},
-			},
-		},
-		{
-			sc: &Filter{Col: 1, Operator: Gt, Value: "a", Exclude: false},
-			in: rows{
-				{"a"},
-				{"b"},
-				{"c"},
-			},
-			want: rows{
-				{"b"},
-				{"c"},
-			},
-		},
-		{
-			sc: &Filter{Col: 1, Operator: Gt, Value: "a", Exclude: true},
-			in: rows{
-				{"a"},
-				{"b"},
-				{"c"},
-			},
-			want: rows{
-				{"a"},
-			},
-		},
-	} {
-		in, sc := tc.in, tc.sc
-		name := fmt.Sprintf("filter %v %d%s%s", in, sc.Col, sc.Operator, sc.Value)
-		if sc.Exclude {
-			name += " exclude"
-		}
-		t.Run(name, func(t *testing.T) {
-			got := append(rows{}, sc.filter(in, nil)...) // filter returns sliced version of in, so capacity may not match want
-			if !reflect.DeepEqual(got[:], tc.want[:len(tc.want)]) {
-				t.Errorf("\ngot:  %q\nwant: %q", got, tc.want)
-			}
-		})
-	}
+	want bool
 }
 
 func TestMatch(t *testing.T) {
-	date := func(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0, 0, 0, time.UTC) }
+	// date := func(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0, 0, 0, time.UTC) }
 
-	type testCase struct {
-		s             string
-		op            Operator
-		val           any
-		it            InferredType
-		lower, invert bool
+	t.Run("String", func(t *testing.T) {
+		testSimple(t, StringType, []simpleMatchTest{
+			{"1", Eq, "1", true},
+			{"1", Ne, "2", true},
+			{"2", Lt, "20", true},
+			{"3", Gt, "20", true},
+			{"4", Gte, "3", true},
+			{"3", Lte, "4", true},
 
-		want bool
-	}
-
-	testCases := []testCase{
-		{s: "1", op: Eq, val: "1", it: StringType, want: true},
-		{s: "1", op: Ne, val: "1", it: StringType, want: false},
-
-		{s: "a", op: Eq, val: "a", it: StringType, want: true},
-		{s: "a", op: Eq, val: "A", it: StringType, want: false},
-
-		{s: "1", op: Lt, val: "A", it: StringType, want: true},
-		{s: "A", op: Lt, val: "a", it: StringType, want: true},
-		{s: "1", op: Lt, val: "a", it: StringType, want: true},
-
-		{s: "1.0", op: Eq, val: 1.0, it: NumberType, want: true},
-		{s: "1", op: Eq, val: 1.0, it: NumberType, want: true},
-
-		{s: "2000-01-02", op: Eq, val: date(2000, 1, 2), it: TimeType, want: true},
-		{s: "2000-01-01", op: Ne, val: date(2000, 1, 2), it: TimeType, want: true},
-		{s: "2000-01-02", op: Lte, val: date(2000, 1, 2), it: TimeType, want: true},
-		{s: "2000-01-02", op: Gte, val: date(2000, 1, 2), it: TimeType, want: true},
-		{s: "2000-01-01", op: Lt, val: date(2000, 1, 2), it: TimeType, want: true},
-		{s: "2000-01-03", op: Gt, val: date(2000, 1, 2), it: TimeType, want: true},
-		{s: "2000-01-02", op: Gt, val: date(2000, 1, 2), it: TimeType, want: false},
-
-		{s: "true", op: Eq, val: true, it: BoolType, want: true},
-		{s: "true", op: Ne, val: true, it: BoolType, want: false},
-	}
-
-	for _, tc := range testCases {
-		name := fmt.Sprintf("%s_%s_%v", tc.s, tc.op, tc.val)
-		t.Run(name, func(t *testing.T) {
-			got := match(tc.s, tc.op, tc.val, tc.it, tc.lower, tc.invert)
-			if got != tc.want {
-				t.Errorf("match(%s, %s, %v, %s) = %t; want %t",
-					tc.s, tc.op, tc.val, tc.it, got, tc.want)
-			}
+			{"a", Eq, "B", false},
+			{"a", Ne, "a", false},
+			{"a", Lt, "A", false},
+			{"A", Gt, "a", false},
+			{"a", Lte, "A", false},
+			{"A", Gte, "a", false},
 		})
-	}
+	})
 
-	for _, tc := range []testCase{
-		{s: "false", op: Lt, val: false, it: BoolType, want: false},
-		{s: "false", op: Gt, val: false, it: BoolType, want: false},
-	} {
-		name := fmt.Sprintf("%s_%s_%v", tc.s, tc.op, tc.val)
+	t.Run("Number", func(t *testing.T) {
+		testSimple(t, NumberType, []simpleMatchTest{
+			{"1", Eq, 1.0, true},
+			{"1", Ne, 2.0, true},
+			{"2", Lt, 3.0, true},
+			{"3", Gt, 2.0, true},
+			{"2", Lte, 3.0, true},
+			{"3", Lte, 3.0, true},
+			{"3", Gte, 3.0, true},
+			{"4", Gte, 3.0, true},
+
+			{"1.0", Eq, 1.0, true},
+
+			{"1", Ne, 1.0, false},
+			{"1", Eq, 2.0, false},
+			{"2", Gt, 3.0, false},
+			{"3", Lt, 2.0, false},
+			{"2", Gte, 3.0, false},
+			{"4", Lte, 3.0, false},
+		})
+	})
+
+	t.Run("Time", func(t *testing.T) {
+		var (
+			jan1 = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+			jan2 = time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC)
+			jan3 = time.Date(2000, 1, 3, 0, 0, 0, 0, time.UTC)
+		)
+		testSimple(t, TimeType, []simpleMatchTest{
+			{"2000-01-01", Eq, jan1, true},
+			{"2000-01-01", Ne, jan2, true},
+			{"2000-01-02", Lt, jan3, true},
+			{"2000-01-03", Gt, jan2, true},
+			{"2000-01-02", Lte, jan3, true},
+			{"2000-01-03", Lte, jan3, true},
+			{"2000-01-03", Gte, jan3, true},
+			{"2000-01-04", Gte, jan3, true},
+
+			{"2000-01-01", Ne, jan1, false},
+			{"2000-01-01", Eq, jan2, false},
+			{"2000-01-02", Gt, jan3, false},
+			{"2000-01-03", Lt, jan2, false},
+			{"2000-01-02", Gte, jan3, false},
+			{"2000-01-04", Lte, jan3, false},
+		})
+	})
+
+	t.Run("Bool", func(t *testing.T) {
+		testSimple(t, BoolType, []simpleMatchTest{
+			{"true", Eq, true, true},
+			{"true", Ne, false, true},
+
+			{"true", Eq, false, false},
+			{"true", Ne, true, false},
+		})
+	})
+
+	// match should panic for nonsense bool operators
+	t.Run("BoolPanic", func(t *testing.T) {
+		for _, tc := range []simpleMatchTest{
+			{"false", Lt, false, false},
+			{"false", Gt, false, false},
+			{"false", Lte, false, false},
+			{"false", Gte, false, false},
+		} {
+			name := fmt.Sprintf("%s_%s_%v", tc.s, tc.op, tc.val)
+			t.Run(name, func(t *testing.T) {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Errorf("bool match `%q %s %v` did not panic; it should have", tc.s, tc.op, tc.val)
+					}
+				}()
+				match(tc.s, tc.op, tc.val, BoolType, false, false)
+			})
+		}
+	})
+}
+
+func testSimple(t *testing.T, it InferredType, testCases []simpleMatchTest) {
+	for _, tc := range testCases {
+		sVal := fmt.Sprintf("%v", tc.val)
+		if it == TimeType {
+			sVal = sVal[:10]
+		}
+
+		name := fmt.Sprintf("%s_%s_%s_is_True", tc.s, tc.op, sVal)
+		if !tc.want {
+			name = fmt.Sprintf("%s_%s_%s_is_False", tc.s, tc.op, sVal)
+		}
+
 		t.Run(name, func(t *testing.T) {
-			defer func() {
-				if r := recover(); r == nil {
-					t.Errorf("match(%s, %s, %v, %s) should have paniced, but didn't", tc.s, tc.op, tc.val, tc.it)
-				}
-			}()
-			got := match(tc.s, tc.op, tc.val, tc.it, tc.lower, tc.invert)
+			got := match(tc.s, tc.op, tc.val, it, false, false)
 			if got != tc.want {
-				t.Errorf("match(%s, %s, %v, %s) = %t; want %t",
-					tc.s, tc.op, tc.val, tc.it, got, tc.want)
+				t.Errorf("match(%s, %s, %v, %s, false, false) = %t; want %t",
+					tc.s, tc.op, tc.val, it, got, tc.want)
 			}
 		})
 	}

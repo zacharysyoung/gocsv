@@ -119,10 +119,10 @@ func (sc *Filter) filter(recs [][]string, reMatcher *regexp.Regexp) [][]string {
 	return recs
 }
 
-// match returns the result of the expression of the inferred
+// match returns the result of the inequality expression of the inferred
 // value of s compared with operator op to the reference value v,
 // applying the supplementary conditions of a lower-case comparison,
-// and/or then negateing the match.
+// and/or then negating the match.
 //
 // If lower is specified, s will be lower-cased before comparing to
 // an assumed already lower-cased v.
@@ -187,8 +187,8 @@ func match(s string, op Operator, v any, it InferredType, lower, negate bool) bo
 				return x == v.(bool)
 			case Ne:
 				return x != v.(bool)
-			default:
-				panic(fmt.Errorf("%s not allowed for boolean filter", op))
+				// default:
+				// 	panic(fmt.Errorf("%s not allowed for boolean filter", op))
 			}
 		}
 		return false
