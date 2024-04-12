@@ -109,11 +109,7 @@ func (sc *Filter) filter(recs [][]string, reMatcher *regexp.Regexp) [][]string {
 		}
 		for i := len(recs) - 1; i >= 0; i-- {
 			s := recs[i][col]
-			if sc.CaseInsensitive {
-				s = strings.ToLower(s)
-			}
-			matched := match(s, sc.Operator, val, StringType)
-			matched = flip(matched)
+			matched := match(s, sc.Operator, val, StringType, sc.CaseInsensitive, sc.Exclude)
 			if !matched {
 				recs = slices.Delete(recs, i, i+1)
 			}
@@ -123,66 +119,84 @@ func (sc *Filter) filter(recs [][]string, reMatcher *regexp.Regexp) [][]string {
 	return recs
 }
 
-func match(s string, op Operator, val any, it InferredType) bool {
-	switch it {
-	case StringType:
-		switch op {
-		case Eq:
-			return s == val.(string)
-		case Ne:
-			return s != val.(string)
-		case Lt:
-			return s < val.(string)
-		case Lte:
-			return s <= val.(string)
-		case Gt:
-			return s > val.(string)
-		case Gte:
-			return s >= val.(string)
+// match returns the result of the expression of the inferred
+// value of s compared with operator op to the reference value v,
+// applying the supplementary conditions of a lower-case comparison,
+// and/or then negateing the match.
+//
+// If lower is specified, s will be lower-cased before comparing to
+// an assumed already lower-cased v.
+func match(s string, op Operator, v any, it InferredType, lower, negate bool) bool {
+	_match := func() bool {
+		switch it {
+		case StringType:
+			if lower {
+				s = strings.ToLower(s)
+			}
+			switch op {
+			case Eq:
+				return s == v.(string)
+			case Ne:
+				return s != v.(string)
+			case Lt:
+				return s < v.(string)
+			case Lte:
+				return s <= v.(string)
+			case Gt:
+				return s > v.(string)
+			case Gte:
+				return s >= v.(string)
+			}
+		case NumberType:
+			x, _ := toNumber(s)
+			switch op {
+			case Eq:
+				return x == v.(float64)
+			case Ne:
+				return x != v.(float64)
+			case Lt:
+				return x < v.(float64)
+			case Lte:
+				return x <= v.(float64)
+			case Gt:
+				return x > v.(float64)
+			case Gte:
+				return x >= v.(float64)
+			}
+		case TimeType:
+			a, _ := toTime(s)
+			b := v.(time.Time)
+			switch op {
+			case Eq:
+				return a.Equal(b)
+			case Ne:
+				return !a.Equal(b)
+			case Lt:
+				return a.Before(b)
+			case Lte:
+				return a.Before(b) || a.Equal(b)
+			case Gt:
+				return a.After(b)
+			case Gte:
+				return a.After(b) || a.Equal(b)
+			}
+		case BoolType:
+			x, _ := toBool(s)
+			switch op {
+			case Eq:
+				return x == v.(bool)
+			case Ne:
+				return x != v.(bool)
+			default:
+				panic(fmt.Errorf("%s not allowed for boolean filter", op))
+			}
 		}
-	case NumberType:
-		x, _ := toNumber(s)
-		switch op {
-		case Eq:
-			return x == val.(float64)
-		case Ne:
-			return x != val.(float64)
-		case Lt:
-			return x < val.(float64)
-		case Lte:
-			return x <= val.(float64)
-		case Gt:
-			return x > val.(float64)
-		case Gte:
-			return x >= val.(float64)
-		}
-	case TimeType:
-		a, _ := toTime(s)
-		b := val.(time.Time)
-		switch op {
-		case Eq:
-			return a.Equal(b)
-		case Ne:
-			return !a.Equal(b)
-		case Lt:
-			return a.Before(b)
-		case Lte:
-			return a.Before(b) || a.Equal(b)
-		case Gt:
-			return a.After(b)
-		case Gte:
-			return a.After(b) || a.Equal(b)
-		}
-	case BoolType:
-		x, _ := toBool(s)
-		switch op {
-		case Eq:
-			return x == val.(bool)
-		case Ne:
-			return x != val.(bool)
-		default:
-			panic(fmt.Errorf("%s not allowed for boolean filter", op))
-		}
+		return false
 	}
-	return false
+
+	m := _match()
+	if negate {
+		m = !m
+	}
+	return m
 }
