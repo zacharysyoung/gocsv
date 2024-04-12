@@ -56,68 +56,24 @@ func main() {
 }
 
 func newFilter(args ...string) (cmd.SubCommander, []string, error) {
-	// const usage = "[-h] -col col_num -eq|-ne|-lt|-lte|-gt|-gte|-re value [-i] [-exclude] [file]"
-	const usage = "[-h] [-i] [-exclude] col num operator value [file]"
+	const usage = "[-h] -col col_num -eq|-ne|-lt|-lte|-gt|-gte|-re value [-i] [-exclude] [file]"
+
 	var (
-		fs = flag.NewFlagSet("filter", flag.ExitOnError)
-		// colFlag = fs.Int("col", 1, "the column number with values to compare")
-		iFlag  = fs.Bool("i", false, "make any string comparison case-insensitive")
-		exFlag = fs.Bool("exclude", false, "print non-matching rows")
+		fs      = flag.NewFlagSet("filter", flag.ExitOnError)
+		colFlag = fs.Int("col", 1, "the column number with values to compare and filter")
+		iFlag   = fs.Bool("i", false, "make any string comparison case-insensitive")
+		exFlag  = fs.Bool("exclude", false, "print non-matching rows")
 	)
-	// fs.String("ne", "", "operator and the value to not equal")
-	// fs.String("eq", "", "operator and the value to equal")
-	// fs.String("gt", "", "operator and the value to be greater than")
-	// fs.String("gte", "", "operator and the value to be greater than or equal to")
-	// fs.String("lt", "", "operator and the value to be less than")
-	// fs.String("lte", "", "operator and the value to be less than or equal to")
-	// fs.String("re", "", "operator and the regular expression value to match")
+	fs.String("ne", "", "filter if not equal to value")
+	fs.String("eq", "", "filter if equal to value")
+	fs.String("gt", "", "filter if greater than value")
+	fs.String("gte", "", "filter if greater than or equal to value")
+	fs.String("lt", "", "filter if less than value")
+	fs.String("lte", "", "filter if less than or equal to value")
+	fs.String("re", "", "filter if matches regular expression")
 
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, `Usage of filter: %s
-Args:
-col_num
-	the column to compare value against; must be a positive
-	integer
-operator
-	any one of the inequalities ne, eq, gt, gte, lt, lte; 
-	or -re
-value
-	the value to be compared against; inferred type for the
-	inequalty operators, a string expression for the -re
-	operator
-
-Flags:
-`, usage)
-		// 		fmt.Fprintf(os.Stderr, `Usage of filter: %s
-
-		// Match any row if an expression of the value in column,
-		// the operator, and the target value is true.
-
-		// # Column (required):
-		// -col int
-		//    	the column number with values to compare (default 1)
-
-		// # Operators (required, only one):
-		// -ne string
-		//    	the value to not equal
-		// -eq string
-		//    	the value to equal
-		// -gt string
-		//    	the value to be greater than
-		// -gte string
-		//    	the value to be greater than or equal to
-		// -lt string
-		//    	the value to be less than
-		// -lte string
-		//    	the value to be less than or equal to
-		// -re string
-		//    	the regular expression value to match
-
-		// # Other flags:
-		// -i	make any string comparison case-insensitive
-		// -exclude
-		//    	print non-matching rows
-		// `, usage)
+		fmt.Fprintf(os.Stderr, "Usage of filter: %s\n", usage)
 		fs.PrintDefaults()
 		os.Exit(2)
 	}
@@ -125,55 +81,29 @@ Flags:
 	fs.Parse(args)
 
 	var (
-		colToken = fs.Arg(0)
-		colArg   = fs.Arg(1)
-		opArg    = fs.Arg(2)
-		valueArg = fs.Arg(3)
-
-		col   int
-		op    cmd.Operator
-		value string
-
-		err error
+		op         cmd.Operator
+		val        string
+		tooManyOps bool
 	)
-	if colToken != "col" {
-		return nil, nil, fmt.Errorf("first arg must be \"col\", followed by the column number\nUsage of filter: %s", usage)
+	fs.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "ne", "eq", "gt", "gte", "lt", "lte", "re":
+			if op != "" {
+				tooManyOps = true
+				return
+			}
+			op = cmd.Operator(f.Name)
+			val = f.Value.String()
+		}
+	})
+	if tooManyOps {
+		return nil, nil, errors.New("one and only one operator (inequality or -re) can be set with the value to filter by\n" + usage)
 	}
-	if col, err = strconv.Atoi(colArg); err != nil {
-		return nil, nil, err
-	}
-	if col < 1 {
-		return nil, nil, errors.New("col_num must be a positive integer")
-	}
-	switch opArg {
-	case "ne", "eq", "gt", "gte", "lt", "lte", "re":
-		op = cmd.Operator(opArg)
-		value = valueArg
-	default:
-		return nil, nil, fmt.Errorf("operator %s not recognized", opArg)
+	if *colFlag < 1 {
+		return nil, nil, errors.New("-col must be a positive integer")
 	}
 
-	// var (
-	// 	op         cmd.Operator
-	// 	val        string
-	// 	tooManyOps bool
-	// )
-	// fs.Visit(func(f *flag.Flag) {
-	// 	switch f.Name {
-	// 	case "ne", "eq", "gt", "gte", "lt", "lte", "re":
-	// 		if op != "" {
-	// 			tooManyOps = true
-	// 			return
-	// 		}
-	// 		op = cmd.Operator(f.Name)
-	// 		val = f.Value.String()
-	// 	}
-	// })
-	// if tooManyOps {
-	// 	return nil, nil, errors.New("one and only one operator (inequality or -re) can be set with the value to filter by\n" + usage)
-	// }
-
-	return cmd.NewFilter(col, op, value, *iFlag, *exFlag), fs.Args()[4:], nil
+	return cmd.NewFilter(*colFlag, op, val, *iFlag, *exFlag), fs.Args()[4:], nil
 }
 
 func newSelect(args ...string) (cmd.SubCommander, []string, error) {
