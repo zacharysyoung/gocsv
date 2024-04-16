@@ -70,6 +70,7 @@ func TestCmds(t *testing.T) {
 				data := a.Files[i].Data
 				i++
 				wantb := a.Files[i].Data
+				wantname := a.Files[i].Name
 				i++
 				t.Run(testname, func(t *testing.T) {
 					want := preprocess(wantb)
@@ -87,17 +88,29 @@ func TestCmds(t *testing.T) {
 					r := bytes.NewReader(cache)
 					buf1, buf2 := &bytes.Buffer{}, &bytes.Buffer{}
 					normalizeCSV(r, buf1)
-					if err := sc.Run(buf1, buf2); err != nil {
-						t.Fatal(err)
-					}
-					viewCSV(buf2, buf1)
 
-					got := buf1.String()
-					if got != want {
-						if *quoteflag {
-							t.Errorf("\ngot:\n%q\nwant:\n%q", got, want)
-						} else {
-							t.Errorf("\ngot:\n%s\nwant:\n%s", got, want)
+					err := sc.Run(buf1, buf2)
+					switch {
+					case err != nil:
+						switch wantname {
+						case "err":
+							got := err.Error()
+							want := strings.TrimSpace(want)
+							if got != want {
+								t.Errorf("\ngot:\n%s\nwant:\n%s", got, want)
+							}
+						default:
+							t.Fatal(err)
+						}
+					default:
+						viewCSV(buf2, buf1)
+						got := buf1.String()
+						if got != want {
+							if *quoteflag {
+								t.Errorf("\ngot:\n%q\nwant:\n%q", got, want)
+							} else {
+								t.Errorf("\ngot:\n%s\nwant:\n%s", got, want)
+							}
 						}
 					}
 				})

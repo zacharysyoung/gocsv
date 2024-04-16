@@ -56,13 +56,14 @@ func main() {
 }
 
 func newFilter(args ...string) (cmd.SubCommander, []string, error) {
-	const usage = "[-h] -col col_num -eq|-ne|-lt|-lte|-gt|-gte|-re value [-i] [-exclude] [file]"
+	const usage = "[-h]  -col col_num -eq|-ne|-lt|-lte|-gt|-gte|-re value  [-i] [-exclude] [-no-infer] [file]"
 
 	var (
-		fs      = flag.NewFlagSet("filter", flag.ExitOnError)
-		colFlag = fs.Int("col", 1, "the column number with values to compare and filter")
-		iFlag   = fs.Bool("i", false, "make any string comparison case-insensitive")
-		exFlag  = fs.Bool("exclude", false, "print non-matching rows")
+		fs        = flag.NewFlagSet("filter", flag.ExitOnError)
+		colFlag   = fs.Int("col", 1, "the column number with values to compare and filter")
+		iFlag     = fs.Bool("i", false, "make any string comparison case-insensitive")
+		exFlag    = fs.Bool("exclude", false, "print non-matching rows")
+		noInfFlag = fs.Bool("no-infer", false, "treat all values as strings")
 	)
 	fs.String("ne", "", "filter if not equal to value")
 	fs.String("eq", "", "filter if equal to value")
@@ -73,37 +74,62 @@ func newFilter(args ...string) (cmd.SubCommander, []string, error) {
 	fs.String("re", "", "filter if matches regular expression")
 
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of filter: %s\n", usage)
-		fs.PrintDefaults()
+		fmt.Fprintf(os.Stderr, `Usage of filter: %s
+  -col int
+    	the column number with values to compare and filter (default 1)
+
+  -eq string
+    	filter if equal to value
+  -ne string
+    	filter if not equal to value
+  -gt string
+    	filter if greater than value
+  -gte string
+    	filter if greater than or equal to value
+  -lt string
+    	filter if less than value
+  -lte string
+    	filter if less than or equal to value
+
+  -re string
+    	filter if value matches regular expression
+
+  -i	make any string comparison case-insensitive
+  -exclude
+    	print non-matching rows
+  -no-infer
+    	treat all values as strings
+`, usage)
+		// fs.PrintDefaults()
 		os.Exit(2)
 	}
 
 	fs.Parse(args)
 
 	var (
-		op         cmd.Operator
-		val        string
-		tooManyOps bool
+		ops []cmd.Operator
+		val string
 	)
 	fs.Visit(func(f *flag.Flag) {
 		switch f.Name {
 		case "ne", "eq", "gt", "gte", "lt", "lte", "re":
-			if op != "" {
-				tooManyOps = true
-				return
-			}
-			op = cmd.Operator(f.Name)
+			ops = append(ops, cmd.Operator(f.Name))
 			val = f.Value.String()
 		}
 	})
-	if tooManyOps {
-		return nil, nil, errors.New("one and only one operator (inequality or -re) can be set with the value to filter by\n" + usage)
+	if len(ops) > 1 {
+		return nil, nil, fmt.Errorf("cannot combine operators %v; one and only one operator can be set\n%s", ops, usage)
 	}
 	if *colFlag < 1 {
 		return nil, nil, errors.New("-col must be a positive integer")
 	}
 
-	return cmd.NewFilter(*colFlag, op, val, *iFlag, *exFlag), fs.Args()[4:], nil
+	sc := cmd.NewFilter(*colFlag, ops[0], val)
+	sc.CaseInsensitive = *iFlag
+	sc.Exclude = *exFlag
+	sc.NoInference = *noInfFlag
+
+	return sc, fs.Args(), nil
 }
 
 func newSelect(args ...string) (cmd.SubCommander, []string, error) {

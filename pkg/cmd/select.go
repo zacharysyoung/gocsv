@@ -6,8 +6,11 @@ import (
 	"io"
 )
 
+// Select reads the input CSV record-by-record and writes only specific
+// fields of each record to the output CSV.
 type Select struct {
-	Cols    []int // 1-based indices of the columns to include, or exclude
+	Cols []int // 1-based indices of the columns to include, or exclude
+
 	Exclude bool
 }
 

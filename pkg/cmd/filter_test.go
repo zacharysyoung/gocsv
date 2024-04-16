@@ -48,7 +48,7 @@ func TestMatch(t *testing.T) {
 			{"3", Gte, 3.0, true},
 			{"4", Gte, 3.0, true},
 
-			{"1.0", Eq, 1.0, true},
+			{"1.0", Eq, float64(1), true},
 
 			{"1", Ne, 1.0, false},
 			{"1", Eq, 2.0, false},
@@ -128,7 +128,7 @@ func testSimple(t *testing.T, it InferredType, testCases []simpleMatchTest) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			got := match(tc.s, tc.op, tc.val, it, false, false)
+			got, _ := match(tc.s, tc.op, tc.val, it, false, false)
 			if got != tc.want {
 				t.Errorf("match(%s, %s, %v, %s, false, false) = %t; want %t",
 					tc.s, tc.op, tc.val, it, got, tc.want)
