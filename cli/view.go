@@ -25,10 +25,6 @@ func (sc *View) Run(r io.Reader, w io.Writer) error {
 		return err
 	}
 
-	if sc.box {
-		sc.maxw = 1
-	}
-
 	types := subcmd.InferCols(recs[1:], subcmd.Base1Cols(recs[0]))
 	truncateCells(recs, sc.maxw, sc.maxh)
 	widths := getColWidths(recs)
