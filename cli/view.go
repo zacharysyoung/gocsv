@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/zacharysyoung/gocsv/pkg/cmd"
+	"github.com/zacharysyoung/gocsv/pkg/subcmd"
 )
 
 type View struct {
@@ -29,7 +29,7 @@ func (sc *View) Run(r io.Reader, w io.Writer) error {
 		sc.maxw = 1
 	}
 
-	types := cmd.InferCols(recs[1:], cmd.Base1Cols(recs[0]))
+	types := subcmd.InferCols(recs[1:], subcmd.Base1Cols(recs[0]))
 	truncateCells(recs, sc.maxw, sc.maxh)
 	widths := getColWidths(recs)
 
@@ -45,7 +45,7 @@ func (sc *View) Run(r io.Reader, w io.Writer) error {
 	return nil
 }
 
-func printSimple(w io.Writer, recs [][]string, widths []int, types []cmd.InferredType) {
+func printSimple(w io.Writer, recs [][]string, widths []int, types []subcmd.InferredType) {
 	const term = "\n"
 
 	sep, comma := "", ","
@@ -53,7 +53,7 @@ func printSimple(w io.Writer, recs [][]string, widths []int, types []cmd.Inferre
 		if i == len(recs[0])-1 {
 			comma = ""
 		}
-		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], cmd.StringType))
+		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], subcmd.StringType))
 		sep = " "
 	}
 	fmt.Fprint(w, term)
@@ -71,11 +71,11 @@ func printSimple(w io.Writer, recs [][]string, widths []int, types []cmd.Inferre
 	}
 }
 
-func printMarkdown(w io.Writer, recs [][]string, widths []int, types []cmd.InferredType) {
+func printMarkdown(w io.Writer, recs [][]string, widths []int, types []subcmd.InferredType) {
 	const term = "|\n"
 
 	for i, x := range recs[0] {
-		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], cmd.StringType))
+		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], subcmd.StringType))
 	}
 	fmt.Fprint(w, term)
 
@@ -83,7 +83,7 @@ func printMarkdown(w io.Writer, recs [][]string, widths []int, types []cmd.Infer
 	for i, t := range types {
 		n := widths[i]
 		switch t {
-		case cmd.StringType:
+		case subcmd.StringType:
 			x = strings.Repeat("-", n)
 		default:
 			x = strings.Repeat("-", n-1) + ":"
@@ -100,7 +100,7 @@ func printMarkdown(w io.Writer, recs [][]string, widths []int, types []cmd.Infer
 	}
 }
 
-func printBoxes(w io.Writer, recs [][]string, types []cmd.InferredType) {
+func printBoxes(w io.Writer, recs [][]string, types []subcmd.InferredType) {
 	var newlines newlines
 	recs, newlines = splitLinebreaks(recs)
 	widths := getColWidths(recs)
@@ -117,7 +117,7 @@ func printBoxes(w io.Writer, recs [][]string, types []cmd.InferredType) {
 
 	printHR()
 	for i, x := range recs[0] {
-		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], cmd.StringType))
+		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], subcmd.StringType))
 	}
 	fmt.Fprint(w, term)
 	printHR()
@@ -187,17 +187,17 @@ func truncate(x string, maxw, maxh int) string {
 	return strings.Join(s, "\n")
 }
 
-func padCells(recs [][]string, suf string, widths []int, types []cmd.InferredType) {
+func padCells(recs [][]string, suf string, widths []int, types []subcmd.InferredType) {
 
 }
 
 // pad pads x and suf with n-number spaces.  Left-justify if
 // it is stringType, right-justify otherwise.
-func pad(x, suf string, n int, it cmd.InferredType) string {
+func pad(x, suf string, n int, it subcmd.InferredType) string {
 	if suf != "" {
 		n += len([]rune(suf))
 	}
-	if it == cmd.StringType {
+	if it == subcmd.StringType {
 		n *= -1
 	}
 	return fmt.Sprintf("%*s", n, x+suf)

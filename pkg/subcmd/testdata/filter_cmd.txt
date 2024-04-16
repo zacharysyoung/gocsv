@@ -61,4 +61,4 @@ a
 -- type error --
 {"Col": 1, "Operator": "lt", "Value": "3"}
 -- err --
-evaluating row 2 cell 1, could not compare "A" to 3 (Number)
+evaluating row 2 cell 1, could not compare String "A" to Number 3

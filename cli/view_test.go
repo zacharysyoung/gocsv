@@ -4,23 +4,23 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/zacharysyoung/gocsv/pkg/cmd"
+	"github.com/zacharysyoung/gocsv/pkg/subcmd"
 )
 
 func TestPad(t *testing.T) {
 	testCases := []struct {
 		x, suf string
-		it     cmd.InferredType
+		it     subcmd.InferredType
 		n      int
 		want   string
 	}{
-		{"foo", "", cmd.StringType, 5, "foo  "},
-		{"foo", "", cmd.NumberType, 5, "  foo"},
-		{"foo", "", cmd.BoolType, 5, "  foo"},
-		{"foo", "", cmd.TimeType, 5, "  foo"},
+		{"foo", "", subcmd.StringType, 5, "foo  "},
+		{"foo", "", subcmd.NumberType, 5, "  foo"},
+		{"foo", "", subcmd.BoolType, 5, "  foo"},
+		{"foo", "", subcmd.TimeType, 5, "  foo"},
 
-		{"foo", ",", cmd.StringType, 5, "foo,  "},
-		{"foo", ",", cmd.NumberType, 5, "  foo,"},
+		{"foo", ",", subcmd.StringType, 5, "foo,  "},
+		{"foo", ",", subcmd.NumberType, 5, "  foo,"},
 	}
 
 	for _, tc := range testCases {

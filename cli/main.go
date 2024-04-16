@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zacharysyoung/gocsv/pkg/cmd"
+	"github.com/zacharysyoung/gocsv/pkg/subcmd"
 )
 
-type scMaker func(...string) (cmd.SubCommander, []string, error)
+type scMaker func(...string) (subcmd.SubCommander, []string, error)
 
 var streamers = map[string]scMaker{
 	"filter": newFilter,
@@ -55,7 +55,7 @@ func main() {
 	}
 }
 
-func newFilter(args ...string) (cmd.SubCommander, []string, error) {
+func newFilter(args ...string) (subcmd.SubCommander, []string, error) {
 	const usage = "[-h]  -col col_num -eq|-ne|-lt|-lte|-gt|-gte|-re value  [-i] [-exclude] [-no-infer] [file]"
 
 	var (
@@ -107,13 +107,13 @@ func newFilter(args ...string) (cmd.SubCommander, []string, error) {
 	fs.Parse(args)
 
 	var (
-		ops []cmd.Operator
+		ops []subcmd.Operator
 		val string
 	)
 	fs.Visit(func(f *flag.Flag) {
 		switch f.Name {
 		case "ne", "eq", "gt", "gte", "lt", "lte", "re":
-			ops = append(ops, cmd.Operator(f.Name))
+			ops = append(ops, subcmd.Operator(f.Name))
 			val = f.Value.String()
 		}
 	})
@@ -124,7 +124,7 @@ func newFilter(args ...string) (cmd.SubCommander, []string, error) {
 		return nil, nil, errors.New("-col must be a positive integer")
 	}
 
-	sc := cmd.NewFilter(*colFlag, ops[0], val)
+	sc := subcmd.NewFilter(*colFlag, ops[0], val)
 	sc.CaseInsensitive = *iFlag
 	sc.Exclude = *exFlag
 	sc.NoInference = *noInfFlag
@@ -132,7 +132,7 @@ func newFilter(args ...string) (cmd.SubCommander, []string, error) {
 	return sc, fs.Args(), nil
 }
 
-func newSelect(args ...string) (cmd.SubCommander, []string, error) {
+func newSelect(args ...string) (subcmd.SubCommander, []string, error) {
 	var (
 		fs       = flag.NewFlagSet("select", flag.ExitOnError)
 		colsflag = fs.String("cols", "", "a range of columns to select, e.g., 1,3-5,2")
@@ -143,10 +143,10 @@ func newSelect(args ...string) (cmd.SubCommander, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return cmd.NewSelect(cols, *exflag), fs.Args(), nil
+	return subcmd.NewSelect(cols, *exflag), fs.Args(), nil
 }
 
-func newSort(args ...string) (cmd.SubCommander, []string, error) {
+func newSort(args ...string) (subcmd.SubCommander, []string, error) {
 	var (
 		fs       = flag.NewFlagSet("sort", flag.ExitOnError)
 		colsflag = fs.String("cols", "", "a range of columns to use as the sort key, e.g., 1,3-5,2")
@@ -157,10 +157,10 @@ func newSort(args ...string) (cmd.SubCommander, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return cmd.NewSort(cols, *revflag, false), fs.Args(), nil
+	return subcmd.NewSort(cols, *revflag, false), fs.Args(), nil
 }
 
-func newView(args ...string) (cmd.SubCommander, []string, error) {
+func newView(args ...string) (subcmd.SubCommander, []string, error) {
 	var (
 		fs      = flag.NewFlagSet("view", flag.ExitOnError)
 		mdflag  = fs.Bool("md", false, "print as (extended) Markdown table")
