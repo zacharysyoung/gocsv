@@ -193,6 +193,13 @@ func newView(args ...string) (subcmd.SubCommander, []string, error) {
 		}
 		return nil
 	})
+
+	if maxhflag < 1 && !*boxflag {
+		maxhflag = 1
+	}
+
+	fmt.Println(args, *boxflag, maxhflag)
+
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, "usage: view [-box [-maxh] | -md] [-maxw]")
 		fs.PrintDefaults()
