@@ -161,6 +161,7 @@ func newSort(args ...string) (subcmd.SubCommander, []string, error) {
 }
 
 func newView(args ...string) (subcmd.SubCommander, []string, error) {
+	const usage = "[-h] [-box [-maxh] | -md] [-maxw]"
 	var (
 		fs      = flag.NewFlagSet("view", flag.ExitOnError)
 		mdflag  = fs.Bool("md", false, "print as (extended) Markdown table")
@@ -195,8 +196,20 @@ func newView(args ...string) (subcmd.SubCommander, []string, error) {
 	})
 
 	fs.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: view [-box [-maxh] | -md] [-maxw]")
-		fs.PrintDefaults()
+		fmt.Fprintf(os.Stderr, `Usage of view: %s
+  -box
+    	print complete cells in simple ascii boxes
+  -maxh value
+    	cap the height of printed multiline cells; must be preceded
+    	by -box; defaults to "all", minimum of 1 if explicitly set
+
+  -md
+    	print as (extended) Markdown table
+
+  -maxw value
+    	cap the width of printed cells; minimum of 3
+`, usage)
+		// fs.PrintDefaults()
 		os.Exit(2)
 	}
 

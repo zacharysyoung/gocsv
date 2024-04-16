@@ -170,7 +170,7 @@ func truncate(x string, maxw, maxh int) string {
 			x = string(r[:maxw-3]) + "..."
 		}
 		// abbreviate x if last line after multiline cut, and not already abbreivated
-		if i == len(s)-1 && cuth && x[len(x)-3:] != "..." {
+		if i == len(s)-1 && cuth && !strings.HasPrefix(x, "...") {
 			if maxw > 3 && len(r)+3 > maxw {
 				x = string(r[:maxw-3]) + "..."
 			} else {
