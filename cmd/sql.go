@@ -11,6 +11,7 @@ import (
 
 type SqlSubcommand struct {
 	queryString string
+	importFlag  bool
 }
 
 func (sub *SqlSubcommand) Name() string {
@@ -25,6 +26,7 @@ func (sub *SqlSubcommand) Description() string {
 func (sub *SqlSubcommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&sub.queryString, "query", "", "SQL query")
 	fs.StringVar(&sub.queryString, "q", "", "SQL query (shorthand)")
+	fs.BoolVar(&sub.importFlag, "import", false, "import to local file ./db")
 }
 
 func (sub *SqlSubcommand) Run(args []string) {
@@ -37,7 +39,7 @@ func (sub *SqlSubcommand) RunSql(inputCsvs []*InputCsv, outputCsvWriter OutputCs
 	query := sub.queryString
 
 	// 1. Create the SQLite DB
-	db, err := sql.Open("sqlite", ":memory:")
+	db, err := sql.Open("sqlite", "./db")
 	if err != nil {
 		ExitWithError(err)
 	}
@@ -47,17 +49,23 @@ func (sub *SqlSubcommand) RunSql(inputCsvs []*InputCsv, outputCsvWriter OutputCs
 	for _, inputCsv := range inputCsvs {
 		PopulateSqlTable(db, inputCsv)
 	}
+
+	// 2.1 bail if just importing
+	if sub.importFlag {
+		return
+	}
+
 	// 3. Run the query
 	rows, err := db.Query(query)
 	if err != nil {
-		ExitWithError(err)
+		ExitWithError(fmt.Errorf("could not run query: %v", err))
 	}
 	defer rows.Close()
 
 	// 4. Write the results
 	columns, err := rows.Columns()
 	if err != nil {
-		ExitWithError(err)
+		ExitWithError(fmt.Errorf("could not get columns for rows: %v", err))
 	}
 	outputCsvWriter.Write(columns)
 
@@ -72,7 +80,7 @@ func (sub *SqlSubcommand) RunSql(inputCsvs []*InputCsv, outputCsvWriter OutputCs
 	for rows.Next() {
 		err := rows.Scan(readRow...)
 		if err != nil {
-			ExitWithError(err)
+			ExitWithError(fmt.Errorf("could not scan row: %v", err))
 		}
 		for i, elem := range writeRow {
 			if elem.Valid {
@@ -109,7 +117,7 @@ func PopulateSqlTable(db *sql.DB, inputCsv *InputCsv) {
 	preparedStatement := fmt.Sprintf(createStatement, allVariables...)
 	_, err := db.Exec(preparedStatement)
 	if err != nil {
-		ExitWithError(err)
+		ExitWithError(fmt.Errorf("could not prepare create statement: %v", err))
 	}
 
 	tableColumns := fmt.Sprintf("%s(%s)", escapedTableName, strings.Join(escapedHeaders, ", "))
@@ -121,7 +129,7 @@ func PopulateSqlTable(db *sql.DB, inputCsv *InputCsv) {
 	insertStatement := fmt.Sprintf("INSERT INTO %s %s", tableColumns, tableValues)
 	preparedInsert, err := db.Prepare(insertStatement)
 	if err != nil {
-		ExitWithError(err)
+		ExitWithError(fmt.Errorf("could not prepare insert statement: %v", err))
 	}
 	valuesRow := make([]interface{}, len(imc.header))
 	for _, row := range imc.rows {
@@ -130,7 +138,7 @@ func PopulateSqlTable(db *sql.DB, inputCsv *InputCsv) {
 		}
 		_, err = preparedInsert.Exec(valuesRow...)
 		if err != nil {
-			ExitWithError(err)
+			ExitWithError(fmt.Errorf("could not exec insert statement: %v", err))
 		}
 	}
 }
