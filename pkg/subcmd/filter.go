@@ -3,48 +3,252 @@ package subcmd
 import (
 	"encoding/csv"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
+	"regexp"
+	"strings"
+	"time"
 )
 
-// Clean cleans a CSV.
-type Clean struct {
-	// Trim leading spaces in a field; placed their by some pretty-
-	// printers, like View.
-	Trim bool
+type Operator string
+
+const (
+	Ne  Operator = "ne"  // not-equal
+	Eq  Operator = "eq"  // equal
+	Gt  Operator = "gt"  // greater-than
+	Gte Operator = "gte" // greater-than-or-equal-to
+	Lt  Operator = "lt"  // less-than
+	Lte Operator = "lte" // less-than-or-equal-to
+
+	Re Operator = "re" // regular expression
+)
+
+// Filter reads the input CSV record-by-record, compares a specified field
+// in each record to a reference value, and writes matches to the output CSV.
+//
+// The comparison can be made with any of the mathematical equality
+// and inequality operators for all of GoCSV's inferred types.  The
+// special regular expression operator can match strings.
+type Filter struct {
+	// Col is the 1-based index of the column (field) in each
+	// record to evaluate.
+	Col int
+	// Operator is one of the mathematical operators Eq, Ne, Gt,
+	// Gte, Lt, Lte, or the regular-expression matcher Re.
+	Operator Operator
+	// Value is the reference value to compare each record's field
+	// value against.
+	Value string
+
+	// CaseInsensitive makes any string comparison case-insensitive.
+	CaseInsensitive bool
+	// Exclude inverts the filter, writing non-matches.
+	Exclude bool
+	// NoInference forces the reference value and each record's field
+	// value to be string.
+	NoInference bool
 }
 
-func NewClean(trim bool) *Clean {
-	return &Clean{
-		Trim: trim,
+func NewFilter(col int, operator Operator, val string) *Filter {
+	return &Filter{
+		Col:      col,
+		Operator: operator,
+		Value:    val,
 	}
 }
 
-func (sc *Clean) fromJSON(p []byte) error {
-	*sc = Clean{}
+func (sc *Filter) fromJSON(p []byte) error {
+	*sc = Filter{}
 	return json.Unmarshal(p, sc)
 }
 
-func (sc *Clean) CheckConfig() error {
+func (sc *Filter) CheckConfig() error {
 	return nil
 }
 
-func (sc *Clean) Run(r io.Reader, w io.Writer) error {
+func (sc *Filter) Run(r io.Reader, w io.Writer) error {
+	var (
+		reMatcher *regexp.Regexp
+		err       error
+	)
+	if sc.Operator == Re {
+		expr := sc.Value
+		if sc.CaseInsensitive {
+			expr = fmt.Sprintf("(?i)%s", expr)
+		}
+		if reMatcher, err = regexp.Compile(expr); err != nil {
+			return err
+		}
+	}
+
 	rr := csv.NewReader(r)
 	ww := csv.NewWriter(w)
 
-	rr.TrimLeadingSpace = sc.Trim
-
-	for {
-		header, err := rr.Read()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
+	header, err := rr.Read()
+	if err != nil {
+		if err == io.EOF {
+			return errors.New("no data")
 		}
-		ww.Write(header)
+		return err
+	}
+	ww.Write(header)
+
+	col := Base0Cols([]int{sc.Col})[0]
+	var record []string
+	switch sc.Operator {
+	case Re:
+		for {
+			if record, err = rr.Read(); err != nil {
+				if err == io.EOF {
+					break
+				}
+				return err
+			}
+			matched := reMatcher.MatchString(record[col])
+			if sc.Exclude {
+				matched = !matched
+			}
+			if matched {
+				if err = ww.Write(record); err != nil {
+					return err
+				}
+			}
+		}
+	default:
+		it := inferType(sc.Value)
+		if sc.NoInference {
+			it = StringType
+		}
+
+		var val any
+		switch it {
+		case StringType:
+			val = sc.Value
+			if sc.CaseInsensitive {
+				val = strings.ToLower(sc.Value)
+			}
+		case NumberType:
+			if val, err = toNumber(sc.Value); err != nil {
+				return err
+			}
+		case TimeType:
+			if val, err = toTime(sc.Value); err != nil {
+				return err
+			}
+		case BoolType:
+			if val, err = toBool(sc.Value); err != nil {
+				return err
+			}
+		}
+
+		for i := 1; ; i++ {
+			if record, err = rr.Read(); err != nil {
+				if err == io.EOF {
+					break
+				}
+				return err
+			}
+			m, err := match(record[col], sc.Operator, val, it, sc.CaseInsensitive, sc.Exclude)
+			if err != nil {
+				sit := inferType(record[col])
+				return fmt.Errorf("evaluating row %d cell %d, could not compare %s %q to %s %v", i, col+1, sit, record[col], it, val)
+			}
+			if m {
+				if err = ww.Write(record); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	ww.Flush()
 	return ww.Error()
+}
+
+// match returns the result of the inequality expression of the inferred
+// value of s compared with operator op to the reference value v,
+// applying the supplementary conditions of a lower-case comparison,
+// and/or then negating the match.
+//
+// If lower is specified, s will be lower-cased before comparing to
+// an assumed already lower-cased v.
+func match(s string, op Operator, v any, it InferredType, lower, negate bool) (bool, error) {
+	_match := func() (bool, error) {
+		switch it {
+		case StringType:
+			if lower {
+				s = strings.ToLower(s)
+			}
+			switch op {
+			case Eq:
+				return s == v.(string), nil
+			case Ne:
+				return s != v.(string), nil
+			case Lt:
+				return s < v.(string), nil
+			case Lte:
+				return s <= v.(string), nil
+			case Gt:
+				return s > v.(string), nil
+			case Gte:
+				return s >= v.(string), nil
+			}
+		case NumberType:
+			x, err := toNumber(s)
+			switch op {
+			case Eq:
+				return x == v.(float64), err
+			case Ne:
+				return x != v.(float64), err
+			case Lt:
+				return x < v.(float64), err
+			case Lte:
+				return x <= v.(float64), err
+			case Gt:
+				return x > v.(float64), err
+			case Gte:
+				return x >= v.(float64), err
+			}
+		case TimeType:
+			a, err := toTime(s)
+			b := v.(time.Time)
+			switch op {
+			case Eq:
+				return a.Equal(b), err
+			case Ne:
+				return !a.Equal(b), err
+			case Lt:
+				return a.Before(b), err
+			case Lte:
+				return a.Before(b) || a.Equal(b), err
+			case Gt:
+				return a.After(b), err
+			case Gte:
+				return a.After(b) || a.Equal(b), err
+			}
+		case BoolType:
+			x, err := toBool(s)
+			switch op {
+			case Eq:
+				return x == v.(bool), err
+			case Ne:
+				return x != v.(bool), err
+			default:
+				panic(fmt.Errorf("%s not allowed for boolean filter", op))
+			}
+		}
+		panic(fmt.Errorf("did not evaluate %s %s %v.(%T) as %s", s, op, v, v, it))
+	}
+
+	m, err := _match()
+	if err != nil {
+		return false, err
+	}
+
+	if negate {
+		m = !m
+	}
+
+	return m, nil
 }
