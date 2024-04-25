@@ -23,13 +23,14 @@ type testSubCommander interface {
 }
 
 var subcommands = map[string]testSubCommander{
+	"clean":  &Clean{},
 	"filter": &Filter{},
 	"select": &Select{},
 	"sort":   &Sort{},
 }
 
 func TestCmds(t *testing.T) {
-	const suffix = "_cmd.txt"
+	const suffix = ".txt"
 	files, err := filepath.Glob("testdata/*" + suffix)
 	if err != nil {
 		t.Fatal(err)
@@ -87,9 +88,16 @@ func TestCmds(t *testing.T) {
 
 					r := bytes.NewReader(cache)
 					buf1, buf2 := &bytes.Buffer{}, &bytes.Buffer{}
-					normalizeCSV(r, buf1)
+
+					switch scName {
+					case "clean":
+						io.Copy(buf1, r)
+					default:
+						normalizeCSV(r, buf1)
+					}
 
 					err := sc.Run(buf1, buf2)
+
 					switch {
 					case err != nil:
 						switch wantname {
@@ -103,7 +111,12 @@ func TestCmds(t *testing.T) {
 							t.Fatal(err)
 						}
 					default:
-						viewCSV(buf2, buf1)
+						switch scName {
+						case "clean":
+							io.Copy(buf1, buf2)
+						default:
+							viewCSV(buf2, buf1)
+						}
 						got := buf1.String()
 						if got != want {
 							if *quoteflag {

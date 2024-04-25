@@ -16,6 +16,7 @@ import (
 type scMaker func(...string) (subcmd.SubCommander, []string, error)
 
 var streamers = map[string]scMaker{
+	"clean":  newClean,
 	"filter": newFilter,
 	"select": newSelect,
 	"sort":   newSort,
@@ -53,6 +54,26 @@ func main() {
 
 		return
 	}
+}
+
+func newClean(args ...string) (subcmd.SubCommander, []string, error) {
+	const usage = "[-h] [-trim]"
+
+	var (
+		fs       = flag.NewFlagSet("clean", flag.ExitOnError)
+		trimFlag = fs.Bool("trim", false, "trim leading spaces from fields")
+	)
+
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of clean: %s\n", usage)
+		fs.PrintDefaults()
+		os.Exit(2)
+	}
+
+	fs.Parse(args)
+
+	sc := subcmd.NewClean(*trimFlag)
+	return sc, fs.Args(), nil
 }
 
 func newFilter(args ...string) (subcmd.SubCommander, []string, error) {

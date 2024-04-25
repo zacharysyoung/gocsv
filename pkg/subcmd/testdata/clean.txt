@@ -1,0 +1,12 @@
+-- in --
+foo,   bar, baz
+1,     2,   3
+-- default --
+-- want --
+foo,"   bar"," baz"
+1,"     2","   3"
+-- trim --
+{"Trim": true}
+-- want --
+foo,bar,baz
+1,2,3
