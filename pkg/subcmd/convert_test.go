@@ -43,34 +43,25 @@ func TestConvertMarkdown(t *testing.T) {
 		want [][]string
 		err  error
 	}{
+
+		{
+			in: []string{
+				"| c1 | c2  | c3 |",
+			},
+			want: nil,
+			err:  errNoMarkdownTable,
+		},
 		{
 			in: []string{
 				"| c1 | c2  | c3 |",
 				"| -- | --: | -- |",
 				"| a  |   1 | i  |",
-				"| b  | 2.0 | ii |",
 			},
 			want: [][]string{
 				{"c1", "c2", "c3"},
 				{"a", "1", "i"},
-				{"b", "2.0", "ii"},
 			},
 			err: nil,
-		},
-		{
-			in: []string{
-				"| c1 | c2  | c3 |",
-			},
-			want: nil,
-			err:  errNoMarkdownTable,
-		},
-		{
-			in: []string{
-				"| c1 | c2  | c3 |",
-				"| a  |   1 | i  |",
-			},
-			want: nil,
-			err:  errNoMarkdownTable,
 		},
 	}
 

@@ -1,3 +1,5 @@
+github.com/yuin/goldmark v1.6.0 h1:boZcn2GTjpsynOsC0iJHnBWa4Bi0qzfJjthwauItG68=
+github.com/yuin/goldmark v1.6.0/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 github.com/zacharysyoung/rsc_markdown v0.0.0 h1:LBh31qypXeRYDI3ZmNHa9fM9JcbhMc9GlGMrDtIkde4=
 github.com/zacharysyoung/rsc_markdown v0.0.0/go.mod h1:DywsORxvuoL2QzWNB1V5CDI9x7ukudaI+bY4mVXYG+M=
 golang.org/x/text v0.3.7 h1:olpwvP2KacW1ZWvsR7uQhoyTYvKAupfQrRGBFM352Gk=

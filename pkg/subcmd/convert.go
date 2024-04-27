@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"io"
 	"strings"
@@ -21,6 +22,11 @@ func NewConvert(fields, markdown bool) *Convert {
 		Fields:   fields,
 		Markdown: markdown,
 	}
+}
+
+func (sc *Convert) fromJSON(p []byte) error {
+	*sc = Convert{}
+	return json.Unmarshal(p, sc)
 }
 
 func (sc *Convert) CheckConfig() error {

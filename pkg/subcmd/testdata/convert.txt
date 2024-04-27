@@ -1,0 +1,59 @@
+-- in --
+| c1 | c2  | c3 |
+| -- | --: | -- |
+| a  |   1 | i  |
+| b  | 2.0 | ii |
+-- markdown --
+{"Markdown": true}
+-- want --
+c1, c2,  c3
+a,    1, i 
+b,  2.0, ii
+-- in --
+# My table
+
+| c1 | c2  | c3 |
+| -- | --: | -- |
+| a  |   1 | i  |
+| b  | 2.0 | ii |
+-- with extra md stuff blank line --
+{"Markdown": true}
+-- want --
+c1, c2,  c3
+a,    1, i 
+b,  2.0, ii
+-- in --
+| `c1` | c2  | c3 |
+| ---- | --: | -- |
+| a    |   1 | i  |
+| b    | 2.0 | ii |
+-- with inline format --
+{"Markdown": true}
+-- want --
+c1, c2,  c3
+a,    1, i 
+b,  2.0, ii
+-- in --
+| [c1][foo] | c2  | c3 |
+| --------- | --: | -- |
+| a         |   1 | i  |
+| b         | 2.0 | ii |
+-- with inline links --
+{"Markdown": true}
+-- want --
+[c1][foo], c2,  c3
+a,           1, i 
+b,         2.0, ii
+-- in --
+| c1 | c2  | c3 |
+-- just header --
+{"Markdown": true}
+-- err --
+could not find Markdown table
+-- in --
+| c1 | c2  | c3 |
+| a  |   1 | i  |
+-- just header and row --
+{"Markdown": true}
+-- err --
+could not find Markdown table

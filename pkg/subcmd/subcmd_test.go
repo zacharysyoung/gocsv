@@ -23,10 +23,11 @@ type testSubCommander interface {
 }
 
 var subcommands = map[string]testSubCommander{
-	"clean":  &Clean{},
-	"filter": &Filter{},
-	"select": &Select{},
-	"sort":   &Sort{},
+	"convert": &Convert{},
+	"clean":   &Clean{},
+	"filter":  &Filter{},
+	"select":  &Select{},
+	"sort":    &Sort{},
 }
 
 func TestCmds(t *testing.T) {
