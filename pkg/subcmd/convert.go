@@ -114,9 +114,13 @@ func convertMarkdown(r io.Reader) ([][]string, error) {
 	for _, x := range tbl.Rows {
 		row = []string{}
 		for _, y := range x {
-			buf.Reset()
-			y.Inline[0].PrintText(buf)
-			row = append(row, buf.String())
+			s := ""
+			if len(y.Inline) > 0 {
+				buf.Reset()
+				y.Inline[0].PrintText(buf)
+				s = buf.String()
+			}
+			row = append(row, s)
 		}
 		rows = append(rows, row)
 	}

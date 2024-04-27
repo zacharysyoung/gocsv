@@ -10,6 +10,17 @@ c1, c2,  c3
 a,    1, i 
 b,  2.0, ii
 -- in --
+| c1 | c2 | c3 |
+| -- | -- | -- |
+| a  |    | i  |
+| b  |    | ii |
+-- empty cells --
+{"Markdown": true}
+-- want --
+c1, c2, c3
+a,  ,   i 
+b,  ,   ii
+-- in --
 # My table
 
 | c1 | c2  | c3 |

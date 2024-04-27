@@ -4,4 +4,4 @@
 
 cd "$1"
 go build ./cmd/cli
-mv cli ~/bin
+mv cli ~/bin/csv
