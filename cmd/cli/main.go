@@ -251,9 +251,10 @@ func newView(args ...string) (subcmd.SubCommander, []string, error) {
     	print complete cells in simple ascii boxes
   -maxh value
     	cap the height of printed multiline cells; must be preceded
-    	by -box; defaults to "all", minimum of 1 if explicitly set
+    	by -box; minimum of 1; defaults to "all"
 
-  -md   print as (extended) Markdown table
+  -md
+      	print as (extended) Markdown table
   -fields
     	print as space-delimited cells
 
