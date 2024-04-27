@@ -1,2 +1,6 @@
+github.com/zacharysyoung/rsc_markdown v0.0.0 h1:LBh31qypXeRYDI3ZmNHa9fM9JcbhMc9GlGMrDtIkde4=
+github.com/zacharysyoung/rsc_markdown v0.0.0/go.mod h1:DywsORxvuoL2QzWNB1V5CDI9x7ukudaI+bY4mVXYG+M=
+golang.org/x/text v0.3.7 h1:olpwvP2KacW1ZWvsR7uQhoyTYvKAupfQrRGBFM352Gk=
+golang.org/x/text v0.3.7/go.mod h1:u+2+/6zg+i71rQMx5EYifcz6MCKuco9NR6JIITiCfzQ=
 golang.org/x/tools v0.19.0 h1:tfGCXNR1OsFG+sVdLAitlpjAvD/I6dHDKnYrpEZUHkw=
 golang.org/x/tools v0.19.0/go.mod h1:qoJWxmGSIBmAeriMx19ogtrEPrGtDbPK634QFIcLAhc=

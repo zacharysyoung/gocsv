@@ -11,8 +11,8 @@ import (
 )
 
 type View struct {
-	box, md    bool
-	maxh, maxw int
+	box, fields, markdown bool
+	maxh, maxw            int
 }
 
 func (sc *View) CheckConfig() error {
@@ -32,8 +32,10 @@ func (sc *View) Run(r io.Reader, w io.Writer) error {
 	switch {
 	default:
 		printSimple(w, recs, widths, types)
-	case sc.md:
+	case sc.markdown:
 		printMarkdown(w, recs, widths, types)
+	case sc.fields:
+		printFields(w, recs, widths, types)
 	case sc.box:
 		printBoxes(w, recs, types)
 	}
@@ -91,6 +93,32 @@ func printMarkdown(w io.Writer, recs [][]string, widths []int, types []subcmd.In
 	for _, rec := range recs[1:] {
 		for i := range rec {
 			fmt.Fprintf(w, "| %s ", pad(rec[i], "", widths[i], types[i]))
+		}
+		fmt.Fprint(w, term)
+	}
+}
+
+func printFields(w io.Writer, recs [][]string, widths []int, types []subcmd.InferredType) {
+	const term = "\n"
+
+	sep, comma := "", ""
+	for i, x := range recs[0] {
+		if i == len(recs[0])-1 {
+			comma = ""
+		}
+		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], subcmd.StringType))
+		sep = " "
+	}
+	fmt.Fprint(w, term)
+
+	for i := 1; i < len(recs); i++ {
+		sep, comma = "", ""
+		for j, x := range recs[i] {
+			if j == len(recs[i])-1 {
+				comma = ""
+			}
+			fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[j], types[j]))
+			sep = " "
 		}
 		fmt.Fprint(w, term)
 	}

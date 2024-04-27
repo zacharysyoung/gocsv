@@ -17,6 +17,7 @@ type scMaker func(...string) (subcmd.SubCommander, []string, error)
 
 var streamers = map[string]scMaker{
 	"clean":  newClean,
+	"conv":   newConvert,
 	"filter": newFilter,
 	"select": newSelect,
 	"sort":   newSort,
@@ -73,6 +74,33 @@ func newClean(args ...string) (subcmd.SubCommander, []string, error) {
 	fs.Parse(args)
 
 	sc := subcmd.NewClean(*trimFlag)
+	return sc, fs.Args(), nil
+}
+
+func newConvert(args ...string) (subcmd.SubCommander, []string, error) {
+	const usage = "[-h] -fields | -md"
+
+	var (
+		fs           = flag.NewFlagSet("conv", flag.ExitOnError)
+		fieldsFlag   = fs.Bool("fields", false, "convert fields to CSV")
+		markdownFlag = fs.Bool("md", false, "convert Markdown table to CSV")
+	)
+
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of convert: %s\n", usage)
+		fs.PrintDefaults()
+		os.Exit(2)
+	}
+
+	fs.Parse(args)
+
+	switch {
+	case *fieldsFlag, *markdownFlag:
+	default:
+		return nil, nil, errors.New("conv: must specify either -fields or -md")
+	}
+
+	sc := subcmd.NewConvert(*fieldsFlag, *markdownFlag)
 	return sc, fs.Args(), nil
 }
 
@@ -139,10 +167,10 @@ func newFilter(args ...string) (subcmd.SubCommander, []string, error) {
 		}
 	})
 	if len(ops) > 1 {
-		return nil, nil, fmt.Errorf("cannot combine operators %v; one and only one operator can be set\n%s", ops, usage)
+		return nil, nil, fmt.Errorf("filter: cannot combine operators %v; one and only one operator can be set\n%s", ops, usage)
 	}
 	if *colFlag < 1 {
-		return nil, nil, errors.New("-col must be a positive integer")
+		return nil, nil, errors.New("filter: -col must be a positive integer")
 	}
 
 	sc := subcmd.NewFilter(*colFlag, ops[0], val)
@@ -182,11 +210,12 @@ func newSort(args ...string) (subcmd.SubCommander, []string, error) {
 }
 
 func newView(args ...string) (subcmd.SubCommander, []string, error) {
-	const usage = "[-h] [-box [-maxh] | -md] [-maxw]"
+	const usage = "[-h] [-box [-maxh] | -fields | -md] [-maxw]"
 	var (
-		fs      = flag.NewFlagSet("view", flag.ExitOnError)
-		mdflag  = fs.Bool("md", false, "print as (extended) Markdown table")
-		boxflag = fs.Bool("box", false, "print complete cells in simple ascii boxes")
+		fs         = flag.NewFlagSet("view", flag.ExitOnError)
+		mdflag     = fs.Bool("md", false, "print as (extended) Markdown table")
+		fieldsflag = fs.Bool("fields", false, "print as space-delimited cells")
+		boxflag    = fs.Bool("box", false, "print complete cells in simple ascii boxes")
 
 		maxwflag, maxhflag int = -1, -1
 
@@ -224,8 +253,9 @@ func newView(args ...string) (subcmd.SubCommander, []string, error) {
     	cap the height of printed multiline cells; must be preceded
     	by -box; defaults to "all", minimum of 1 if explicitly set
 
-  -md
-    	print as (extended) Markdown table
+  -md   print as (extended) Markdown table
+  -fields
+    	print as space-delimited cells
 
   -maxw value
     	cap the width of printed cells; minimum of 3
@@ -240,7 +270,7 @@ func newView(args ...string) (subcmd.SubCommander, []string, error) {
 		maxhflag = 1
 	}
 
-	return &View{box: *boxflag, md: *mdflag, maxh: maxhflag, maxw: maxwflag}, fs.Args(), nil
+	return &View{box: *boxflag, markdown: *mdflag, fields: *fieldsflag, maxh: maxhflag, maxw: maxwflag}, fs.Args(), nil
 }
 
 func parseCols(s string) ([]int, error) {
