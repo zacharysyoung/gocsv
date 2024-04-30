@@ -35,14 +35,14 @@ func (sc *Clean) Run(r io.Reader, w io.Writer) error {
 	rr.TrimLeadingSpace = sc.Trim
 
 	for {
-		header, err := rr.Read()
+		record, err := rr.Read()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
 			return err
 		}
-		ww.Write(header)
+		ww.Write(record)
 	}
 
 	ww.Flush()
