@@ -28,6 +28,7 @@ var subcommands = map[string]testSubCommander{
 	"filter":  &Filter{},
 	"select":  &Select{},
 	"sort":    &Sort{},
+	"tail":    &Tail{},
 }
 
 func TestCmds(t *testing.T) {

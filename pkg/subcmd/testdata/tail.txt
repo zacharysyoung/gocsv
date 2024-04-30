@@ -1,0 +1,27 @@
+-- in --
+foo, bar
+  1, a  $
+  2, b  $
+  3, c  $
+  4, d  $
+-- n less-than rows 1 --
+{"N": 2}
+-- want --
+foo, bar
+  3, c  $
+  4, d  $
+-- n less-than rows 2 --
+{"N": 3}
+-- want --
+foo, bar
+  2, b  $
+  3, c  $
+  4, d  $
+-- n greater-than rows --
+{"N": 5}
+-- want --
+foo, bar
+  1, a  $
+  2, b  $
+  3, c  $
+  4, d  $

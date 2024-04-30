@@ -21,6 +21,7 @@ var streamers = map[string]scMaker{
 	"filter": newFilter,
 	"select": newSelect,
 	"sort":   newSort,
+	"tail":   newTail,
 	"view":   newView,
 }
 
@@ -207,6 +208,21 @@ func newSort(args ...string) (subcmd.SubCommander, []string, error) {
 		return nil, nil, err
 	}
 	return subcmd.NewSort(cols, *revflag, false), fs.Args(), nil
+}
+
+func newTail(args ...string) (subcmd.SubCommander, []string, error) {
+	const usage = "[-h] [-n]"
+	var (
+		fs    = flag.NewFlagSet("tail", flag.ExitOnError)
+		nflag = fs.Int("n", 10, "the number of end rows to print")
+	)
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of tail:  %s\n", usage)
+		fs.PrintDefaults()
+		os.Exit(2)
+	}
+	fs.Parse(args)
+	return subcmd.NewTail(*nflag), fs.Args(), nil
 }
 
 func newView(args ...string) (subcmd.SubCommander, []string, error) {
