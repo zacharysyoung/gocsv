@@ -107,12 +107,12 @@ func newClean(args ...string) (subcmd.SubCommander, []string, error) {
 }
 
 func newConvert(args ...string) (subcmd.SubCommander, []string, error) {
-	const usage = "[-h] -fields | -md"
+	const usage = "[-h] -fields | -md [file]"
 
 	var (
 		fs           = flag.NewFlagSet("conv", flag.ExitOnError)
-		fieldsFlag   = fs.Bool("fields", false, "convert fields to CSV")
-		markdownFlag = fs.Bool("md", false, "convert Markdown table to CSV")
+		fieldsFlag   = fs.Bool("fields", false, "convert whitespace-delimited fields to CSV")
+		markdownFlag = fs.Bool("md", false, "converts first (Github Flavored) Markdown table to CSV; all other Markdown is discarded")
 	)
 
 	fs.Usage = func() {
