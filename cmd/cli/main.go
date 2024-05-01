@@ -213,16 +213,32 @@ func newSort(args ...string) (subcmd.SubCommander, []string, error) {
 func newTail(args ...string) (subcmd.SubCommander, []string, error) {
 	const usage = "[-h] [-n]"
 	var (
-		fs    = flag.NewFlagSet("tail", flag.ExitOnError)
-		nflag = fs.Int("n", 10, "the number of end rows to print")
+		fs = flag.NewFlagSet("tail", flag.ExitOnError)
+
+		n       int
+		fromTop bool
 	)
+	fs.Func(
+		"n",
+		"the number of rows to print relative to the end of the input (default 10); a leading plus sign ('+') makes the offset relative to the beginning of the input, e.g., '+2' will start printing at the second row",
+		func(s string) error {
+			s = strings.TrimSpace(s)
+			if strings.HasPrefix(s, "+") {
+				fromTop = true
+				s = strings.TrimPrefix(s, "+")
+			}
+			var err error
+			n, err = strconv.Atoi(s)
+			return err
+		})
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of tail:  %s\n", usage)
 		fs.PrintDefaults()
 		os.Exit(2)
 	}
 	fs.Parse(args)
-	return subcmd.NewTail(*nflag), fs.Args(), nil
+
+	return subcmd.NewTail(n, fromTop), fs.Args(), nil
 }
 
 func newView(args ...string) (subcmd.SubCommander, []string, error) {

@@ -9,12 +9,14 @@ import (
 
 // Tail reads the last n-number rows of the input CSV.
 type Tail struct {
-	N int
+	N       int
+	FromTop bool
 }
 
-func NewTail(n int) *Tail {
+func NewTail(n int, fromTop bool) *Tail {
 	return &Tail{
-		N: n,
+		N:       n,
+		FromTop: fromTop,
 	}
 }
 
@@ -27,22 +29,15 @@ func (sc *Tail) CheckConfig() error {
 	return nil
 }
 
-// [[1],[2],[3],[4],[5],[6],[7]]
-// n=3
-// buf=[_,_,_,]
-// step 0: buf=[_,_,1]
-// step 1: buf=[_,1,2]
-// step 2: buf=[1,2,3]
-// step 3: buf=[2,3,4]
-// step 4: buf=[3,4,5]
-// step 5: buf=[4,5,6]
-// step 6: buf=[5,6,7]
-
 func (sc *Tail) Run(r io.Reader, w io.Writer) error {
 	rr := csv.NewReader(r)
 	ww := csv.NewWriter(w)
 
-	header, err := rr.Read()
+	var (
+		header []string
+		err    error
+	)
+	header, err = rr.Read()
 	if err != nil {
 		if err == io.EOF {
 			return errors.New("no data")
@@ -50,13 +45,28 @@ func (sc *Tail) Run(r io.Reader, w io.Writer) error {
 	}
 	ww.Write(header)
 
+	switch sc.FromTop {
+	case true:
+		err = tailFromTop(rr, ww, sc.N)
+	case false:
+		err = tailFromBottom(rr, ww, sc.N)
+	}
+	if err != nil {
+		return err
+	}
+
+	ww.Flush()
+	return ww.Error()
+}
+
+// tailFromBottom reads from and write the n-last records to w.
+func tailFromBottom(r *csv.Reader, w *csv.Writer, n int) error {
 	var (
-		i   = 0
-		n   = sc.N
 		buf = make([][]string, n)
+		i   = 0
 	)
 	for ; ; i++ {
-		record, err := rr.Read()
+		record, err := r.Read()
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -65,12 +75,39 @@ func (sc *Tail) Run(r io.Reader, w io.Writer) error {
 		}
 		buf = append(buf[1:], record)
 	}
-
+	n = len(buf)
 	if i < n {
 		n = i
 	}
 
-	ww.WriteAll(buf[len(buf)-n:])
-	ww.Flush()
-	return ww.Error()
+	w.WriteAll(buf[len(buf)-n:])
+
+	return nil
+}
+
+// tailFromTop reads from r, dumps records up to n, then
+// writes records to w, starting at n.
+func tailFromTop(r *csv.Reader, w *csv.Writer, n int) error {
+	for i := 0; i < n-1; i++ {
+		_, err := r.Read()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+	}
+
+	for {
+		record, err := r.Read()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		w.Write(record)
+	}
+
+	return nil
 }

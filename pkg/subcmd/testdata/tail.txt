@@ -25,3 +25,20 @@ foo, bar
   2, b  $
   3, c  $
   4, d  $
+-- 2nd from-top --
+{"N": 2, "FromTop": true}
+-- want --
+foo, bar
+  2, b  $
+  3, c  $
+  4, d  $
+-- 3rd from-top --
+{"N": 3, "FromTop": true}
+-- want --
+foo, bar
+  3, c  $
+  4, d  $
+-- from-top greater-than rows --
+{"N": 10, "FromTop": true}
+-- want --
+foo, bar
