@@ -7,13 +7,24 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 
 	"github.com/zacharysyoung/gocsv/pkg/subcmd"
 )
 
-type scMaker func(...string) (subcmd.SubCommander, []string, error)
+const usage = `Usage: csv [-v | -h] <command> <args>
+
+Commands:
+clean   Prepare input CSV for further processing
+conv    Convert non-CSV formats, like Markdown table, to CSV
+filter  Filter rows of input CSV based on a columns's values
+select  Select (or omit) certain columns of the input CSV
+sort    Sort rows of input CSV based on a column's values
+tail    Print the end of the input CSV
+view    Print the input CSV in nicer-to-look-at formats
+`
 
 var streamers = map[string]scMaker{
 	"clean":  newClean,
@@ -25,37 +36,54 @@ var streamers = map[string]scMaker{
 	"view":   newView,
 }
 
+type scMaker func(...string) (subcmd.SubCommander, []string, error)
+
 func main() {
+	if len(os.Args) < 2 {
+		printHelp()
+	}
+
+	switch os.Args[1] {
+	case "-v":
+		printVersion()
+	case "-h":
+		printHelp()
+	}
+
 	name := os.Args[1]
 
-	if newfunc, ok := streamers[name]; ok {
-		sc, tailArgs, err := newfunc(os.Args[2:]...)
-		if err != nil {
-			errorBadArgs(err)
-		}
-
-		var r io.Reader
-		switch len(tailArgs) {
-		case 0:
-			r = os.Stdin
-		case 1:
-			if r, err = os.Open(tailArgs[0]); err != nil {
-				errorBadArgs(err)
-			}
-		default:
-			errorBadArgs(fmt.Errorf("got %d extra args; %s allows for only one named file", len(tailArgs), name))
-		}
-
-		if err := sc.CheckConfig(); err != nil {
-			errorBadArgs(err)
-		}
-
-		if err := sc.Run(r, os.Stdout); err != nil {
-			errorOut("", err)
-		}
-
-		return
+	newfunc, ok := streamers[name]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "error: no command %s\n", name)
+		printHelp()
 	}
+
+	sc, tailArgs, err := newfunc(os.Args[2:]...)
+	if err != nil {
+		errorBadArgs(err)
+	}
+
+	var r io.Reader
+	switch len(tailArgs) {
+	case 0:
+		r = os.Stdin
+	case 1:
+		if r, err = os.Open(tailArgs[0]); err != nil {
+			errorBadArgs(err)
+		}
+	default:
+		errorBadArgs(fmt.Errorf("got %d extra args; %s allows for only one named file", len(tailArgs), name))
+	}
+
+	if err := sc.CheckConfig(); err != nil {
+		errorBadArgs(err)
+	}
+
+	if err := sc.Run(r, os.Stdout); err != nil {
+		errorOut("", err)
+	}
+
+	return
 }
 
 func newClean(args ...string) (subcmd.SubCommander, []string, error) {
@@ -367,6 +395,26 @@ func splitRange(x string) (cols []int, err error) {
 	}
 
 	return
+}
+
+func printHelp() {
+	fmt.Fprint(os.Stderr, usage)
+	os.Exit(2)
+}
+
+func printVersion() {
+	s := "gocsv2"
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		for _, x := range bi.Settings {
+			if x.Key == "vcs.revision" {
+				s += ":" + x.Value[:7] // short hash
+				break
+			}
+		}
+		s += ":" + bi.GoVersion
+	}
+	fmt.Fprintln(os.Stderr, s)
+	os.Exit(2)
 }
 
 func errorBadArgs(err error) {
