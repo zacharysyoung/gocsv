@@ -118,25 +118,25 @@ func (sc *Filter) Run(r io.Reader, w io.Writer) error {
 	default:
 		it := inferType(sc.Value)
 		if sc.NoInference {
-			it = StringType
+			it = String
 		}
 
 		var val any
 		switch it {
-		case StringType:
+		case String:
 			val = sc.Value
 			if sc.CaseInsensitive {
 				val = strings.ToLower(sc.Value)
 			}
-		case NumberType:
+		case Number:
 			if val, err = toNumber(sc.Value); err != nil {
 				return err
 			}
-		case TimeType:
+		case Time:
 			if val, err = toTime(sc.Value); err != nil {
 				return err
 			}
-		case BoolType:
+		case Bool:
 			if val, err = toBool(sc.Value); err != nil {
 				return err
 			}
@@ -176,7 +176,7 @@ func (sc *Filter) Run(r io.Reader, w io.Writer) error {
 func match(s string, op Operator, v any, it InferredType, lower, negate bool) (bool, error) {
 	_match := func() (bool, error) {
 		switch it {
-		case StringType:
+		case String:
 			if lower {
 				s = strings.ToLower(s)
 			}
@@ -194,7 +194,7 @@ func match(s string, op Operator, v any, it InferredType, lower, negate bool) (b
 			case Gte:
 				return s >= v.(string), nil
 			}
-		case NumberType:
+		case Number:
 			x, err := toNumber(s)
 			switch op {
 			case Eq:
@@ -210,7 +210,7 @@ func match(s string, op Operator, v any, it InferredType, lower, negate bool) (b
 			case Gte:
 				return x >= v.(float64), err
 			}
-		case TimeType:
+		case Time:
 			a, err := toTime(s)
 			b := v.(time.Time)
 			switch op {
@@ -227,7 +227,7 @@ func match(s string, op Operator, v any, it InferredType, lower, negate bool) (b
 			case Gte:
 				return a.After(b) || a.Equal(b), err
 			}
-		case BoolType:
+		case Bool:
 			x, err := toBool(s)
 			switch op {
 			case Eq:

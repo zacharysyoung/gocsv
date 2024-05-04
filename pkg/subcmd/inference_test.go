@@ -11,24 +11,24 @@ func TestInferType(t *testing.T) {
 		s    string
 		want InferredType
 	}{
-		{"-1.0", NumberType},
-		{"-1", NumberType},
-		{"0", NumberType},
-		{"0.0", NumberType},
-		{"1", NumberType},
-		{"1.0", NumberType},
-		{"True", BoolType},
-		{"true", BoolType},
-		{"TrUe", BoolType},
-		{"T", BoolType},
-		{"false", BoolType},
-		{"False", BoolType},
-		{"falSE", BoolType},
-		{"F", BoolType},
-		{"2000-1-1", TimeType},
-		{"2000-01-01", TimeType},
-		{"1/1/2000", TimeType},
-		{"01/01/2000", TimeType},
+		{"-1.0", Number},
+		{"-1", Number},
+		{"0", Number},
+		{"0.0", Number},
+		{"1", Number},
+		{"1.0", Number},
+		{"True", Bool},
+		{"true", Bool},
+		{"TrUe", Bool},
+		{"T", Bool},
+		{"false", Bool},
+		{"False", Bool},
+		{"falSE", Bool},
+		{"F", Bool},
+		{"2000-1-1", Time},
+		{"2000-01-01", Time},
+		{"1/1/2000", Time},
+		{"01/01/2000", Time},
 	}
 
 	for _, tc := range testCases {
@@ -56,7 +56,7 @@ func TestInferCols(t *testing.T) {
 				{"-0"},
 			},
 			cols: cols{1},
-			want: types{NumberType},
+			want: types{Number},
 		},
 		{
 			name: "single uniform bool",
@@ -66,7 +66,7 @@ func TestInferCols(t *testing.T) {
 				{"f"},
 			},
 			cols: cols{1},
-			want: types{BoolType},
+			want: types{Bool},
 		},
 		{
 			name: "single uniform string",
@@ -76,7 +76,7 @@ func TestInferCols(t *testing.T) {
 				{"🤓"},
 			},
 			cols: cols{1},
-			want: types{StringType},
+			want: types{String},
 		},
 		{
 			name: "single mixed string",
@@ -86,7 +86,7 @@ func TestInferCols(t *testing.T) {
 				{"1"},
 			},
 			cols: cols{1},
-			want: types{StringType},
+			want: types{String},
 		},
 		{
 			name: "multi mixed string",
@@ -97,7 +97,7 @@ func TestInferCols(t *testing.T) {
 			},
 			cols: cols{1, 2},
 			want: types{
-				StringType, StringType,
+				String, String,
 			},
 		},
 		{
@@ -109,7 +109,7 @@ func TestInferCols(t *testing.T) {
 			},
 			cols: cols{1, 3},
 			want: types{
-				NumberType, TimeType,
+				Number, Time,
 			},
 		},
 		{
@@ -122,7 +122,7 @@ func TestInferCols(t *testing.T) {
 			},
 			cols: cols{1},
 			want: types{
-				TimeType,
+				Time,
 			},
 		},
 	}
@@ -166,32 +166,32 @@ func TestCompare(t *testing.T) {
 		a, b any
 		want int
 	}{
-		{BoolType, true, false, -1},
-		{BoolType, true, true, 0},
-		{BoolType, false, false, 0},
-		{BoolType, false, true, 1},
+		{Bool, true, false, -1},
+		{Bool, true, true, 0},
+		{Bool, false, false, 0},
+		{Bool, false, true, 1},
 
-		{NumberType, 1.0, 2.0, -1},
-		{NumberType, 2.0, 2.0, 0},
-		{NumberType, 2.0, 1.0, 1},
+		{Number, 1.0, 2.0, -1},
+		{Number, 2.0, 2.0, 0},
+		{Number, 2.0, 1.0, 1},
 
-		{TimeType, jan1, jan2, -1},
-		{TimeType, jan2, jan2, 0},
-		{TimeType, jan2, jan1, 1},
+		{Time, jan1, jan2, -1},
+		{Time, jan2, jan2, 0},
+		{Time, jan2, jan1, 1},
 
-		{StringType, "a", "b", -1},
-		{StringType, "b", "b", 0},
-		{StringType, "b", "a", 1},
+		{String, "a", "b", -1},
+		{String, "b", "b", 0},
+		{String, "b", "a", 1},
 	} {
 		if got := compare1(tc.a, tc.b, tc.it); got != tc.want {
 			switch tc.it {
-			case NumberType:
+			case Number:
 				t.Errorf("compare(%g, %g) got %d; want %d", tc.a, tc.b, got, tc.want)
-			case BoolType:
+			case Bool:
 				t.Errorf("compare(%t, %t) got %d; want %d", tc.a, tc.b, got, tc.want)
-			case StringType:
+			case String:
 				t.Errorf("compare(%q, %q) got %d; want %d", tc.a, tc.b, got, tc.want)
-			case TimeType:
+			case Time:
 				t.Errorf("compare(%s, %s) got %d; want %d", tfmt(tc.a), tfmt(tc.b), got, tc.want)
 			}
 		}

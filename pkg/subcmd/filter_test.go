@@ -20,7 +20,7 @@ func TestMatch(t *testing.T) {
 	// date := func(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0, 0, 0, time.UTC) }
 
 	t.Run("String", func(t *testing.T) {
-		testSimple(t, StringType, []simpleMatchTest{
+		testSimple(t, String, []simpleMatchTest{
 			{"1", Eq, "1", true},
 			{"1", Ne, "2", true},
 			{"2", Lt, "20", true},
@@ -38,7 +38,7 @@ func TestMatch(t *testing.T) {
 	})
 
 	t.Run("Number", func(t *testing.T) {
-		testSimple(t, NumberType, []simpleMatchTest{
+		testSimple(t, Number, []simpleMatchTest{
 			{"1", Eq, 1.0, true},
 			{"1", Ne, 2.0, true},
 			{"2", Lt, 3.0, true},
@@ -65,7 +65,7 @@ func TestMatch(t *testing.T) {
 			jan2 = time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC)
 			jan3 = time.Date(2000, 1, 3, 0, 0, 0, 0, time.UTC)
 		)
-		testSimple(t, TimeType, []simpleMatchTest{
+		testSimple(t, Time, []simpleMatchTest{
 			{"2000-01-01", Eq, jan1, true},
 			{"2000-01-01", Ne, jan2, true},
 			{"2000-01-02", Lt, jan3, true},
@@ -85,7 +85,7 @@ func TestMatch(t *testing.T) {
 	})
 
 	t.Run("Bool", func(t *testing.T) {
-		testSimple(t, BoolType, []simpleMatchTest{
+		testSimple(t, Bool, []simpleMatchTest{
 			{"true", Eq, true, true},
 			{"true", Ne, false, true},
 
@@ -109,7 +109,7 @@ func TestMatch(t *testing.T) {
 						t.Errorf("bool match `%q %s %v` did not panic; it should have", tc.s, tc.op, tc.val)
 					}
 				}()
-				match(tc.s, tc.op, tc.val, BoolType, false, false)
+				match(tc.s, tc.op, tc.val, Bool, false, false)
 			})
 		}
 	})
@@ -118,7 +118,7 @@ func TestMatch(t *testing.T) {
 func testSimple(t *testing.T, it InferredType, testCases []simpleMatchTest) {
 	for _, tc := range testCases {
 		sVal := fmt.Sprintf("%v", tc.val)
-		if it == TimeType {
+		if it == Time {
 			sVal = sVal[:10]
 		}
 

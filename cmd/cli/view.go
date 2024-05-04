@@ -51,7 +51,7 @@ func printSimple(w io.Writer, recs [][]string, widths []int, types []subcmd.Infe
 		if i == len(recs[0])-1 {
 			comma = ""
 		}
-		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], subcmd.StringType))
+		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], subcmd.String))
 		sep = " "
 	}
 	fmt.Fprint(w, term)
@@ -73,7 +73,7 @@ func printMarkdown(w io.Writer, recs [][]string, widths []int, types []subcmd.In
 	const term = "|\n"
 
 	for i, x := range recs[0] {
-		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], subcmd.StringType))
+		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], subcmd.String))
 	}
 	fmt.Fprint(w, term)
 
@@ -81,7 +81,7 @@ func printMarkdown(w io.Writer, recs [][]string, widths []int, types []subcmd.In
 	for i, t := range types {
 		n := widths[i]
 		switch t {
-		case subcmd.StringType:
+		case subcmd.String:
 			x = strings.Repeat("-", n)
 		default:
 			x = strings.Repeat("-", n-1) + ":"
@@ -106,7 +106,7 @@ func printFields(w io.Writer, recs [][]string, widths []int, types []subcmd.Infe
 		if i == len(recs[0])-1 {
 			comma = ""
 		}
-		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], subcmd.StringType))
+		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], subcmd.String))
 		sep = " "
 	}
 	fmt.Fprint(w, term)
@@ -141,7 +141,7 @@ func printBoxes(w io.Writer, recs [][]string, types []subcmd.InferredType) {
 
 	printHR()
 	for i, x := range recs[0] {
-		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], subcmd.StringType))
+		fmt.Fprintf(w, "| %s ", pad(x, "", widths[i], subcmd.String))
 	}
 	fmt.Fprint(w, term)
 	printHR()
@@ -221,7 +221,7 @@ func pad(x, suf string, n int, it subcmd.InferredType) string {
 	if suf != "" {
 		n += len([]rune(suf))
 	}
-	if it == subcmd.StringType {
+	if it == subcmd.String {
 		n *= -1
 	}
 	return fmt.Sprintf("%*s", n, x+suf)

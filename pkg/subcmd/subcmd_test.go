@@ -209,7 +209,7 @@ func viewCSV(r io.Reader, w io.Writer) error {
 		types = InferCols(recs[1:], cols)
 	case 1:
 		for range recs[0] {
-			types = append(types, StringType)
+			types = append(types, String)
 		}
 	}
 
@@ -219,7 +219,7 @@ func viewCSV(r io.Reader, w io.Writer) error {
 		if suf != "" {
 			n += len([]rune(suf))
 		}
-		if it == StringType {
+		if it == String {
 			n *= -1
 		}
 		return fmt.Sprintf("%*s", n, x+suf)
@@ -232,7 +232,7 @@ func viewCSV(r io.Reader, w io.Writer) error {
 		if i == len(recs[0])-1 {
 			comma = ""
 		}
-		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], StringType))
+		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], String))
 		sep = " "
 	}
 	fmt.Fprint(w, term)

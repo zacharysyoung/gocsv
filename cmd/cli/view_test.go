@@ -14,13 +14,13 @@ func TestPad(t *testing.T) {
 		n      int
 		want   string
 	}{
-		{"foo", "", subcmd.StringType, 5, "foo  "},
-		{"foo", "", subcmd.NumberType, 5, "  foo"},
-		{"foo", "", subcmd.BoolType, 5, "  foo"},
-		{"foo", "", subcmd.TimeType, 5, "  foo"},
+		{"foo", "", subcmd.String, 5, "foo  "},
+		{"foo", "", subcmd.Number, 5, "  foo"},
+		{"foo", "", subcmd.Bool, 5, "  foo"},
+		{"foo", "", subcmd.Time, 5, "  foo"},
 
-		{"foo", ",", subcmd.StringType, 5, "foo,  "},
-		{"foo", ",", subcmd.NumberType, 5, "  foo,"},
+		{"foo", ",", subcmd.String, 5, "foo,  "},
+		{"foo", ",", subcmd.Number, 5, "  foo,"},
 	}
 
 	for _, tc := range testCases {

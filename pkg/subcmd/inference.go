@@ -12,23 +12,23 @@ import (
 type InferredType int
 
 const (
-	NumberType InferredType = iota
-	BoolType
-	TimeType // date and datetime
-	StringType
+	Number InferredType = iota
+	Bool
+	Time // date and datetime
+	String
 )
 
 func (it InferredType) String() string {
 	switch it {
 	default:
 		panic(fmt.Errorf("bad inferredType value: %#v", it))
-	case NumberType:
+	case Number:
 		return "Number"
-	case BoolType:
+	case Bool:
 		return "Bool"
-	case TimeType:
+	case Time:
 		return "Datetime"
-	case StringType:
+	case String:
 		return "String"
 	}
 }
@@ -36,13 +36,13 @@ func (it InferredType) String() string {
 func inferType(x string) InferredType {
 	switch {
 	default:
-		return StringType
+		return String
 	case isNumber(x):
-		return NumberType
+		return Number
 	case isBool(x):
-		return BoolType
+		return Bool
 	case isTime(x):
-		return TimeType
+		return Time
 	}
 }
 
@@ -70,10 +70,10 @@ func InferCols(recs [][]string, cols []int) []InferredType {
 	var t InferredType
 	for i := 1; i < len(recs); i++ {
 		for j, jx := range cols {
-			if types[j] != StringType {
+			if types[j] != String {
 				t = inferType(recs[i][jx])
 				if t != types[j] {
-					types[j] = StringType
+					types[j] = String
 				}
 			}
 		}
@@ -137,11 +137,11 @@ func toTime(x string) (time.Time, error) {
 
 func compare1(a, b any, it InferredType) int {
 	switch it {
-	case BoolType:
+	case Bool:
 		return compareBools(a.(bool), b.(bool))
-	case NumberType:
+	case Number:
 		return cmp.Compare(a.(float64), b.(float64))
-	case TimeType:
+	case Time:
 		return a.(time.Time).Compare(b.(time.Time))
 	default:
 		return cmp.Compare(a.(string), b.(string))
@@ -150,15 +150,15 @@ func compare1(a, b any, it InferredType) int {
 
 func compare2(a, b string, it InferredType) int {
 	switch it {
-	case BoolType:
+	case Bool:
 		x, _ := toBool(a)
 		y, _ := toBool(b)
 		return compareBools(x, y)
-	case NumberType:
+	case Number:
 		x, _ := toNumber(a)
 		y, _ := toNumber(b)
 		return cmp.Compare(x, y)
-	case TimeType:
+	case Time:
 		x, _ := toTime(a)
 		y, _ := toTime(b)
 		return x.Compare(y)
