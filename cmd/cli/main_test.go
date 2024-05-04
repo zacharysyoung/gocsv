@@ -20,6 +20,7 @@ func TestParseCols(t *testing.T) {
 
 		{`1,3-5,2`, []int{1, 3, 4, 5, 2}, nil},
 
+		{`1, 3-5 , 2`, nil, errSpaceInCols},
 		{`1-`, nil, errOpenendedRange},
 	}
 	for _, tc := range testCases {

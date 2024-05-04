@@ -333,14 +333,20 @@ func newView(args ...string) (subcmd.SubCommander, []string, error) {
 	return &View{box: *boxflag, markdown: *mdflag, fields: *fieldsflag, maxh: maxhflag, maxw: maxwflag}, fs.Args(), nil
 }
 
-// TODO: create Reader that can sniff the header
-var errOpenendedRange = errors.New("cannot parse open-ended Range")
+var (
+	errSpaceInCols = errors.New("cannot have space in columns")
+	// TODO: create Reader that can sniff the header
+	errOpenendedRange = errors.New("cannot parse open-ended range")
+)
 
 // parseCols takes a string of cols, like '1,4,2-3', and returns
 // a slice of ints, like []int{1,4,2,3}
 func parseCols(s string) ([]int, error) {
 	if s == "" {
 		return nil, nil
+	}
+	if strings.Contains(s, " ") {
+		return nil, fmt.Errorf("%w: %s", errSpaceInCols, s)
 	}
 
 	ss := strings.Split(s, ",")
@@ -374,7 +380,7 @@ func parseCols(s string) ([]int, error) {
 // "1-4" to [1 2 3 4], or "9-7" to [9 8 7].
 func splitRange(x string) (cols []int, err error) {
 	if strings.HasSuffix(x, "-") {
-		err = errOpenendedRange
+		err = fmt.Errorf("%w: %q", errOpenendedRange, x)
 		return
 	}
 
