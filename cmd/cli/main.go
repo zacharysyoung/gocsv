@@ -19,6 +19,7 @@ Commands:
 clean   Prepare input CSV for further processing
 conv    Convert non-CSV formats, like Markdown table, to CSV
 filter  Filter rows of input CSV based on a columns's values
+rename  Rename CSV's columns
 select  Select (or omit) certain columns of the input CSV
 sort    Sort rows of input CSV based on a column's values
 tail    Print the end of the input CSV
@@ -29,6 +30,7 @@ var streamers = map[string]scMaker{
 	"clean":  newClean,
 	"conv":   newConvert,
 	"filter": newFilter,
+	"rename": newRename,
 	"select": newSelect,
 	"sort":   newSort,
 	"tail":   newTail,
@@ -207,6 +209,26 @@ func newFilter(args ...string) (subcmd.SubCommander, []string, error) {
 	sc.NoInference = *noInfFlag
 
 	return sc, fs.Args(), nil
+}
+
+func newRename(args ...string) (subcmd.SubCommander, []string, error) {
+	var (
+		fs         = flag.NewFlagSet("select", flag.ExitOnError)
+		colsflag   = fs.String("cols", "", "a range of columns to select, e.g., 1,3-5,2")
+		namesflag  = fs.String("names", "", "list of new names, matches the count and order of represented columns in -cols")
+		regexpflag = fs.String("regexp", "", "regexp to match names in -cols; must be used only with -repl")
+		replflag   = fs.String("repl", "", "replacement string; must be used only -regexp")
+	)
+	fs.Parse(args)
+	groups, err := parseCols(*colsflag)
+	if err != nil {
+		return nil, nil, err
+	}
+	names := strings.Split(*namesflag, ",")
+	if len(names) == 1 && names[0] == "" {
+		names = names[:0]
+	}
+	return subcmd.NewRename(groups, names, *regexpflag, *replflag), fs.Args(), nil
 }
 
 func newSelect(args ...string) (subcmd.SubCommander, []string, error) {
