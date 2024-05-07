@@ -41,7 +41,7 @@ func (sc *Rename) CheckConfig() error {
 func (sc *Rename) Run(r io.Reader, w io.Writer) error {
 	rr := csv.NewReader(r)
 	ww := csv.NewWriter(w)
-	fmt.Printf("%#v\n", sc)
+
 	var err error
 
 	header, err := rr.Read()

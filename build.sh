@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e # exit-on-error
 
 [ -z "$1" ] && { echo 'usage: build GOCSV-DIR'; exit 1; }
 
