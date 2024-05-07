@@ -1,25 +1,35 @@
 -- in --
-A, B, C, D
-1, 2, 3, 4
+α,β,γ,δ
+1,2,3,4
 -- defaults --
 -- want --
-A, B, C, D
-1, 2, 3, 4
+α,β,γ,δ
+1,2,3,4
 -- cols --
-{"Cols":[2, 3]}
+{"ColGroups":[[2], [3]]}
 -- want --
-B, C
-2, 3
+β,γ
+2,3
 -- rearranged --
-{"Cols":[3, 2]}
+{"ColGroups":[[3], [2]]}
 -- want --
-C, B
-3, 2
+γ,β
+3,2
+-- range --
+{"ColGroups":[[2, 4]]}
+-- want --
+β,γ,δ
+2,3,4
 -- in --
-A, B, C, D
-1, 2, 3, 4
--- exclude --
-{"Cols":[2, 3], "Exclude":true}
+α,β,γ,δ
+1,2,3,4
+-- exclude singles --
+{"ColGroups":[[2], [3]], "Exclude":true}
 -- want --
-A, D
-1, 4
+α,δ
+1,4
+-- exclude range --
+{"ColGroups":[[2, 3]], "Exclude":true}
+-- want --
+α,δ
+1,4

@@ -94,7 +94,7 @@ func (sc *Filter) Run(r io.Reader, w io.Writer) error {
 	}
 	ww.Write(header)
 
-	col := Base0Cols([]int{sc.Col})[0]
+	col := base0Cols([]int{sc.Col})[0]
 	var record []string
 	switch sc.Operator {
 	case Re:

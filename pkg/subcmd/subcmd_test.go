@@ -2,10 +2,8 @@ package subcmd
 
 import (
 	"bytes"
-	"encoding/csv"
 	"flag"
 	"fmt"
-	"io"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -89,16 +87,24 @@ func TestCmds(t *testing.T) {
 					}
 
 					r := bytes.NewReader(cache)
-					buf1, buf2 := &bytes.Buffer{}, &bytes.Buffer{}
+					buf := &bytes.Buffer{}
 
-					switch scName {
-					case "clean":
-						io.Copy(buf1, r)
-					default:
-						normalizeCSV(r, buf1)
-					}
+					defer func() {
+						if err := recover(); err != nil {
+							switch wantname {
+							case "panic":
+								got := fmt.Sprint(err)
+								want := strings.TrimSpace(want)
+								if got != want {
+									t.Errorf("\n got: %s\nwant: %s", got, want)
+								}
+							default:
+								t.Fatal(err)
+							}
+						}
+					}()
 
-					err := sc.Run(buf1, buf2)
+					err := sc.Run(r, buf)
 
 					switch {
 					case err != nil:
@@ -113,13 +119,7 @@ func TestCmds(t *testing.T) {
 							t.Fatal(err)
 						}
 					default:
-						switch scName {
-						case "clean":
-							io.Copy(buf1, buf2)
-						default:
-							viewCSV(buf2, buf1)
-						}
-						got := buf1.String()
+						got := buf.String()
 						if got != want {
 							if *quoteflag {
 								t.Errorf("\ngot:\n%q\nwant:\n%q", got, want)
@@ -158,8 +158,44 @@ func TestBase0Cols(t *testing.T) {
 		{[]int{1, 2}, []int{0, 1}},
 		{[]int{1, 1}, []int{0, 0}},
 	} {
-		if got := Base0Cols(tc.in); !reflect.DeepEqual(got, tc.want) {
+		if got := base0Cols(tc.in); !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("rebase0(%v) = %v; want %v", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestFinalizeCols(t *testing.T) {
+	// reference header w/4 columns
+	var header = []string{"A", "B", "C", "D"}
+
+	type Groups []ColGroup
+	testCases := []struct {
+		groups Groups
+		want   []int
+		err    error
+	}{
+		// Single columns
+		{Groups{{1}, {2}}, []int{1, 2}, nil},
+		{Groups{{2}, {1}, {4}}, []int{2, 1, 4}, nil},
+		// Basic open ranges
+		{Groups{{-1, -1}}, []int{1, 2, 3, 4}, nil},
+		{Groups{{1, -1}}, []int{1, 2, 3, 4}, nil},
+		{Groups{{-1, 4}}, []int{1, 2, 3, 4}, nil},
+		{Groups{{2, -1}}, []int{2, 3, 4}, nil},
+		{Groups{{-1, 3}}, []int{1, 2, 3}, nil},
+		// Two open ranges that overlap
+		{Groups{{-1, 3}, {2, -1}}, []int{1, 2, 3, 2, 3, 4}, nil},
+		// No groups means all columns
+		{nil, []int{1, 2, 3, 4}, nil},
+	}
+
+	for _, tc := range testCases {
+		got, err := FinalizeCols(tc.groups, header)
+		if err != nil {
+			t.Fatalf("expandCols(%v, ...): %v", tc.groups, err)
+		}
+		if !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("expandCols(%v, ...) = %v; want %v", tc.groups, got, tc.want)
 		}
 	}
 }
@@ -169,85 +205,4 @@ func preprocess(b []byte) string {
 	s := string(b)
 	s = strings.ReplaceAll(s, "$\n", "\n") // remove terminal-marking $
 	return s
-}
-
-// normalizeCSV trims leading spaces from visually aligned/padded
-// CSV in txtar files.
-func normalizeCSV(r io.Reader, w io.Writer) error {
-	rr := csv.NewReader(r)
-	rr.TrimLeadingSpace = true
-
-	recs, err := rr.ReadAll()
-	if err != nil {
-		return err
-	}
-
-	ww := csv.NewWriter(w)
-	if err := ww.WriteAll(recs); err != nil {
-		return err
-	}
-	ww.Flush()
-	return ww.Error()
-}
-
-// viewCSV aligns/pads CSV.
-func viewCSV(r io.Reader, w io.Writer) error {
-	rr := csv.NewReader(r)
-	recs, err := rr.ReadAll()
-	if err != nil {
-		return err
-	}
-
-	cols := make([]int, len(recs[0]))
-	for i := range recs[0] {
-		cols[i] = i + 1
-	}
-
-	types := make([]InferredType, 0)
-	switch len(recs) {
-	default:
-		types = InferCols(recs[1:], cols)
-	case 1:
-		for range recs[0] {
-			types = append(types, String)
-		}
-	}
-
-	widths := getColWidths(recs)
-
-	pad := func(x, suf string, n int, it InferredType) string {
-		if suf != "" {
-			n += len([]rune(suf))
-		}
-		if it == String {
-			n *= -1
-		}
-		return fmt.Sprintf("%*s", n, x+suf)
-	}
-
-	const term = "\n"
-
-	sep, comma := "", ","
-	for i, x := range recs[0] {
-		if i == len(recs[0])-1 {
-			comma = ""
-		}
-		fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[i], String))
-		sep = " "
-	}
-	fmt.Fprint(w, term)
-
-	for i := 1; i < len(recs); i++ {
-		sep, comma = "", ","
-		for j, x := range recs[i] {
-			if j == len(recs[i])-1 {
-				comma = ""
-			}
-			fmt.Fprintf(w, "%s%s", sep, pad(x, comma, widths[j], types[j]))
-			sep = " "
-		}
-		fmt.Fprint(w, term)
-	}
-
-	return nil
 }

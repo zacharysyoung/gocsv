@@ -1,44 +1,44 @@
+Tail doesn't have any _test.go unit tests—any and
+all testing happens here.
 -- in --
-foo, bar
-  1, a  $
-  2, b  $
-  3, c  $
-  4, d  $
--- n less-than rows 1 --
+A
+1
+2
+3
+4
+-- bottom 1 row --
+{"N": 1}
+-- want --
+A
+4
+-- bottom 2 rows --
 {"N": 2}
 -- want --
-foo, bar
-  3, c  $
-  4, d  $
--- n less-than rows 2 --
-{"N": 3}
--- want --
-foo, bar
-  2, b  $
-  3, c  $
-  4, d  $
--- n greater-than rows --
-{"N": 5}
--- want --
-foo, bar
-  1, a  $
-  2, b  $
-  3, c  $
-  4, d  $
--- 2nd from-top --
+A
+3
+4
+-- from row 2 down --
 {"N": 2, "FromTop": true}
 -- want --
-foo, bar
-  2, b  $
-  3, c  $
-  4, d  $
--- 3rd from-top --
+A
+2
+3
+4
+-- from row 3 down --
 {"N": 3, "FromTop": true}
 -- want --
-foo, bar
-  3, c  $
-  4, d  $
--- from-top greater-than rows --
-{"N": 10, "FromTop": true}
+A
+3
+4
+-- n greater-than num rows --
+{"N": 10}
 -- want --
-foo, bar
+A
+1
+2
+3
+4
+-- zero rows --
+{"N": 0}
+-- panic --
+N = 0; N must be greater than 0

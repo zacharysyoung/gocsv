@@ -1,12 +1,15 @@
 -- in --
-foo,   bar, baz
-1,     2,   3
+A,  B, C $
+x,  1, i $
+y, 20, ii$
 -- default --
 -- want --
-foo,"   bar"," baz"
-1,"     2","   3"
+A,"  B"," C "
+x,"  1"," i "
+y," 20"," ii"
 -- trim --
 {"Trim": true}
 -- want --
-foo,bar,baz
-1,2,3
+A,B,C $
+x,1,i $
+y,20,ii$

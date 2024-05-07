@@ -9,13 +9,13 @@ import (
 // Select reads the input CSV record-by-record and writes only specific
 // fields of each record to the output CSV.
 type Select struct {
-	Cols []int // 1-based indices of the columns to include, or exclude
+	ColGroups []ColGroup // 1-based indices of the columns to include, or exclude
 
 	Exclude bool
 }
 
-func NewSelect(cols []int, exclude bool) *Select {
-	return &Select{Cols: cols, Exclude: exclude}
+func NewSelect(groups []ColGroup, exclude bool) *Select {
+	return &Select{ColGroups: groups, Exclude: exclude}
 }
 
 func (sc *Select) fromJSON(p []byte) error {
@@ -39,20 +39,21 @@ func (sc *Select) Run(r io.Reader, w io.Writer) error {
 		return err
 	}
 
-	cols := Base1Cols(header)
-	if len(sc.Cols) > 0 {
-		if sc.Exclude {
-			cols = exclude(cols, sc.Cols)
-		} else {
-			cols = sc.Cols
-		}
+	cols, err := FinalizeCols(sc.ColGroups, header)
+	if err != nil {
+		return err
 	}
+
+	if len(cols) > 0 && sc.Exclude {
+		cols = exclude(cols, header)
+	}
+	cols = base0Cols(cols)
 
 	row := make([]string, len(cols))
 	write := func(rec []string) {
 		row = row[:]
-		for i, ii := range cols {
-			row[i] = rec[ii-1]
+		for i, x := range cols {
+			row[i] = rec[x]
 		}
 		ww.Write(row)
 	}
@@ -72,21 +73,18 @@ func (sc *Select) Run(r io.Reader, w io.Writer) error {
 	return ww.Error()
 }
 
-// exclude returns cols minus excludes.
-func exclude(cols []int, excludes []int) []int {
-	em := make(map[int]bool)
-	for _, x := range excludes {
-		em[x] = true
+// exclude returns header's 1-based indexes minus cols.
+func exclude(cols []int, header []string) []int {
+	excludes := make(map[int]bool)
+	for _, x := range cols {
+		excludes[x] = true
 	}
-
-	final := make([]int, len(cols)-len(excludes))
-	for i, j := 0, 0; i < len(cols); i++ {
-		x := cols[i]
-		if !em[x] {
-			final[j] = x
-			j++
+	final := make([]int, 0)
+	for i := range header {
+		i++ // 1-based
+		if !excludes[i] {
+			final = append(final, i)
 		}
 	}
-
 	return final
 }

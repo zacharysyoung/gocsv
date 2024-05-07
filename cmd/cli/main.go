@@ -216,11 +216,11 @@ func newSelect(args ...string) (subcmd.SubCommander, []string, error) {
 		exflag   = fs.Bool("exclude", false, "invert the cols selection to exclude those columns")
 	)
 	fs.Parse(args)
-	cols, err := parseCols(*colsflag)
+	groups, err := parseCols(*colsflag)
 	if err != nil {
 		return nil, nil, err
 	}
-	return subcmd.NewSelect(cols, *exflag), fs.Args(), nil
+	return subcmd.NewSelect(groups, *exflag), fs.Args(), nil
 }
 
 func newSort(args ...string) (subcmd.SubCommander, []string, error) {
@@ -333,76 +333,71 @@ func newView(args ...string) (subcmd.SubCommander, []string, error) {
 	return &View{box: *boxflag, markdown: *mdflag, fields: *fieldsflag, maxh: maxhflag, maxw: maxwflag}, fs.Args(), nil
 }
 
-var (
-	errSpaceInCols = errors.New("cannot have space in columns")
-	// TODO: create Reader that can sniff the header
-	errOpenendedRange = errors.New("cannot parse open-ended range")
-)
-
-// parseCols takes a string of cols, like '1,4,2-3', and returns
-// a slice of ints, like []int{1,4,2,3}
-func parseCols(s string) ([]int, error) {
+// parseCols parses a comma-delimited list of 1-based columns and
+// column ranges into column groups, e.g.,
+//
+//	1,2,3         → [[1],[2],[3]]
+//	4-6,8,-3,9-,7 → [[4,6],[8],[-1,3],[9,-1],[7]].
+//
+// Once the calling subcmd has the header it will send the groups
+// to [subcmd.FinalizeCols] to finalize the indexes.
+func parseCols(s string) ([]subcmd.ColGroup, error) {
 	if s == "" {
 		return nil, nil
 	}
 	if strings.Contains(s, " ") {
-		return nil, fmt.Errorf("%w: %s", errSpaceInCols, s)
+		return nil, fmt.Errorf("cols cannot have a space: %s", s)
 	}
 
 	ss := strings.Split(s, ",")
 
-	cols := make([]int, 0)
+	groups := make([]subcmd.ColGroup, 0)
 	for _, x := range ss {
-		switch strings.Count(x, "-") {
-		case 0:
+		switch strings.Contains(x, "-") {
+		case false:
 			a, err := strconv.Atoi(x)
 			if err != nil {
 				return nil, err
 			}
-			cols = append(cols, a)
+			groups = append(groups, subcmd.ColGroup{a})
 			continue
-		case 1:
-			xcols, err := splitRange(x)
+		case true:
+			group, err := splitRange(x)
 			if err != nil {
 				return nil, err
 			}
-			cols = append(cols, xcols...)
-		default:
-			return nil, fmt.Errorf("too many dashes in %s", x)
-
+			groups = append(groups, group)
 		}
 	}
-	return cols, nil
+	return groups, nil
 }
 
-// splitRange splits a range of column indexes into a
-// complete slice of the represented indexes, e.g.,
-// "1-4" to [1 2 3 4], or "9-7" to [9 8 7].
-func splitRange(x string) (cols []int, err error) {
-	if strings.HasSuffix(x, "-") {
-		err = fmt.Errorf("%w: %q", errOpenendedRange, x)
-		return
-	}
+// splitRange parses a range string into a ColGroup.
+func splitRange(s string) (group subcmd.ColGroup, err error) {
+	const dash = "-"
 
-	s := strings.Split(x, "-")
-
-	var a, b int
-	if a, err = strconv.Atoi(s[0]); err != nil {
-		return
-	}
-	if b, err = strconv.Atoi(s[1]); err != nil {
-		return
-	}
-
-	switch a < b {
-	case true:
-		for i := a; i <= b; i++ {
-			cols = append(cols, i)
+	a, b := -1, -1
+	switch strings.Count(s, dash) {
+	case 0:
+		if a, err = strconv.Atoi(s); err != nil {
+			return
 		}
-	case false:
-		for i := a; i >= b; i-- {
-			cols = append(cols, i)
+		group = subcmd.ColGroup{a}
+	case 1:
+		ss := strings.Split(s, dash)
+		if ss[0] != "" {
+			if a, err = strconv.Atoi(ss[0]); err != nil {
+				return
+			}
 		}
+		if ss[1] != "" {
+			if b, err = strconv.Atoi(ss[1]); err != nil {
+				return
+			}
+		}
+		group = subcmd.ColGroup{a, b}
+	default:
+		err = errors.New("wrong number of dashes")
 	}
 
 	return

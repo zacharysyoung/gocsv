@@ -9,13 +9,13 @@ import (
 )
 
 type Sort struct {
-	Cols     []int // 1-based indices of columns to use as compare keys
-	Reversed bool
-	Stably   bool
+	ColGroups []ColGroup // 1-based indices of columns to use as compare keys
+	Reversed  bool
+	Stably    bool
 }
 
-func NewSort(cols []int, reversed, stably bool) *Sort {
-	return &Sort{Cols: cols, Reversed: reversed, Stably: stably}
+func NewSort(colGroups []ColGroup, reversed, stably bool) *Sort {
+	return &Sort{ColGroups: colGroups, Reversed: reversed, Stably: stably}
 }
 
 func (sc *Sort) fromJSON(p []byte) error {
@@ -36,9 +36,10 @@ func (sc *Sort) Run(r io.Reader, w io.Writer) error {
 		return err
 	}
 
-	cols := sc.Cols
-	if cols == nil {
-		cols = Base1Cols(recs[0])
+	groups := sc.ColGroups
+	cols, err := FinalizeCols(groups, recs[0])
+	if err != nil {
+		return err
 	}
 
 	order := 1
@@ -62,7 +63,7 @@ func sort(recs [][]string, cols []int, order int) {
 		panic(errors.New("order must be -1 or 1"))
 	}
 	types := InferCols(recs, cols)
-	cols = Base0Cols(cols)
+	cols = base0Cols(cols)
 	slices.SortFunc(recs, func(a, b []string) int {
 		for i, ix := range cols {
 			if x := compare2(a[ix], b[ix], types[i]); x != 0 {

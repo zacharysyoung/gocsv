@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 )
 
@@ -30,6 +31,10 @@ func (sc *Tail) CheckConfig() error {
 }
 
 func (sc *Tail) Run(r io.Reader, w io.Writer) error {
+	if sc.N < 1 {
+		panic(fmt.Errorf("N = %d; N must be greater than 0", sc.N))
+	}
+
 	rr := csv.NewReader(r)
 	ww := csv.NewWriter(w)
 
@@ -59,7 +64,8 @@ func (sc *Tail) Run(r io.Reader, w io.Writer) error {
 	return ww.Error()
 }
 
-// tailFromBottom reads from and write the n-last records to w.
+// tailFromBottom reads from r, ignoring records up to the n-th
+// record, then starts writing to w.
 func tailFromBottom(r *csv.Reader, w *csv.Writer, n int) error {
 	var (
 		buf = make([][]string, n)
@@ -67,10 +73,10 @@ func tailFromBottom(r *csv.Reader, w *csv.Writer, n int) error {
 	)
 	for ; ; i++ {
 		record, err := r.Read()
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
-			if err == io.EOF {
-				break
-			}
 			return err
 		}
 		buf = append(buf[1:], record)

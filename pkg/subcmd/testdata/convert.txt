@@ -1,69 +1,58 @@
 -- in --
-| c1 | c2  | c3 |
-| -- | --: | -- |
-| a  |   1 | i  |
-| b  | 2.0 | ii |
+| α |  β |
+| - | -: |
+| a |  1 |
+| b | 20 |
 -- markdown --
 {"Markdown": true}
 -- want --
-c1, c2,  c3
-a,    1, i 
-b,  2.0, ii
--- in --
-| c1 | c2 | c3 |
-| -- | -- | -- |
-| a  |    | i  |
-| b  |    | ii |
--- empty cells --
-{"Markdown": true}
--- want --
-c1, c2, c3
-a,  ,   i 
-b,  ,   ii
+α,β
+a,1
+b,20
 -- in --
 # My table
 
-| c1 | c2  | c3 |
-| -- | --: | -- |
-| a  |   1 | i  |
-| b  | 2.0 | ii |
+| α |  β |
+| - | -: |
+| a |  1 |
+| b | 20 |
 -- with extra md stuff blank line --
 {"Markdown": true}
 -- want --
-c1, c2,  c3
-a,    1, i 
-b,  2.0, ii
+α,β
+a,1
+b,20
 -- in --
-| `c1` | c2  | c3 |
-| ---- | --: | -- |
-| a    |   1 | i  |
-| b    | 2.0 | ii |
+| `α` |  β |
+| --- | -: |
+| a   |  1 |
+| b   | 20 |
 -- with inline format --
 {"Markdown": true}
 -- want --
-c1, c2,  c3
-a,    1, i 
-b,  2.0, ii
+α,β
+a,1
+b,20
 -- in --
-| [c1][foo] | c2  | c3 |
-| --------- | --: | -- |
-| a         |   1 | i  |
-| b         | 2.0 | ii |
+| [α][Α] |  β |
+| ------ | -: |
+| a      |  1 |
+| b      | 20 |
 -- with inline links --
 {"Markdown": true}
 -- want --
-[c1][foo], c2,  c3
-a,           1, i 
-b,         2.0, ii
+[α][Α],β
+a,1
+b,20
 -- in --
-| c1 | c2  | c3 |
+| α | β |
 -- just header --
 {"Markdown": true}
 -- err --
 could not find Markdown table
 -- in --
-| c1 | c2  | c3 |
-| a  |   1 | i  |
+| α |  β |
+| a |  1 |
 -- just header and row --
 {"Markdown": true}
 -- err --
