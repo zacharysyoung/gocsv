@@ -212,13 +212,19 @@ func newFilter(args ...string) (subcmd.SubCommander, []string, error) {
 }
 
 func newRename(args ...string) (subcmd.SubCommander, []string, error) {
+	const usage = "[-h] [-cols] [-names | -regexp [-repl]] [file]"
 	var (
 		fs         = flag.NewFlagSet("select", flag.ExitOnError)
 		colsflag   = fs.String("cols", "", "a range of columns to select, e.g., 1,3-5,2")
 		namesflag  = fs.String("names", "", "list of new names, matches the count and order of represented columns in -cols")
-		regexpflag = fs.String("regexp", "", "regexp to match names in -cols; must be used only with -repl")
-		replflag   = fs.String("repl", "", "replacement string; must be used only -regexp")
+		regexpflag = fs.String("regexp", "", "regexp to match names in -cols")
+		replflag   = fs.String("repl", "", "replacement string; can only be used with -regexp")
 	)
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of filter: %s\n", usage)
+		fs.PrintDefaults()
+		os.Exit(2)
+	}
 	fs.Parse(args)
 	groups, err := parseCols(*colsflag)
 	if err != nil {

@@ -3,13 +3,13 @@ package subcmd
 import (
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
 )
 
-// Select reads the input CSV record-by-record and writes only specific
-// fields of each record to the output CSV.
+// Rename changes column names in the header.
 type Rename struct {
 	// ColGroups are the ColGroups that represent the columns to be
 	// renamed.
@@ -59,13 +59,11 @@ func (sc *Rename) Run(r io.Reader, w io.Writer) error {
 
 	switch {
 	case len(sc.Names) > 0:
-		if len(cols) != len(sc.Names) {
-			return fmt.Errorf("number of cols %d not equal to number of names %d", len(cols), len(sc.Names))
+		if header, err = rename(header, cols, sc.Names); err != nil {
+			return err
 		}
-		header = rename(header, cols, sc.Names)
 	case sc.Regexp != "":
-		header, err = replace(header, cols, sc.Regexp, sc.Repl)
-		if err != nil {
+		if header, err = replace(header, cols, sc.Regexp, sc.Repl); err != nil {
 			return err
 		}
 	default:
@@ -88,18 +86,33 @@ func (sc *Rename) Run(r io.Reader, w io.Writer) error {
 	return ww.Error()
 }
 
-func rename(header []string, cols []int, names []string) []string {
-	return header
-}
+var errWrongCounts = errors.New("cols and names must be the same length")
 
-func replace(header []string, cols []int, sre, repl string) ([]string, error) {
-	re, err := regexp.Compile(sre)
-	if err != nil {
-		return nil, err
+// rename changes values in header with pairs of 1-based cols and
+// names.
+func rename(header []string, cols []int, names []string) ([]string, error) {
+	if len(names) != len(cols) {
+		return nil, fmt.Errorf("%w: %d names != %d cols", errWrongCounts, len(names), len(cols))
 	}
-	for _, x := range cols {
-		x-- // 0-based
-		header[x] = re.ReplaceAllString(header[x], repl)
+	cols = base0Cols(cols)
+	for i, x := range cols {
+		header[x] = names[i]
 	}
 	return header, nil
+}
+
+// replace changes values in header that match sre by doing a
+// regexpReplaceAllString with repl.
+func replace(header []string, cols []int, sre, repl string) (hdr []string, err error) {
+	var re *regexp.Regexp
+	if re, err = regexp.Compile(sre); err != nil {
+		return
+	}
+
+	hdr = make([]string, len(header))
+	copy(hdr, header)
+	for _, x := range base0Cols(cols) {
+		hdr[x] = re.ReplaceAllString(header[x], repl)
+	}
+	return
 }
