@@ -24,6 +24,7 @@ var subcommands = map[string]testSubCommander{
 	"convert": &Convert{},
 	"clean":   &Clean{},
 	"filter":  &Filter{},
+	"head":    &Head{},
 	"select":  &Select{},
 	"sort":    &Sort{},
 	"tail":    &Tail{},

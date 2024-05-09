@@ -89,12 +89,12 @@ Subcommand's need:
 
   // SUBCMD ... input CSV ...
   type SUBCMD struct {
-
+  	...
   }
 
-  func NewSUBCMD(n int, fromTop bool) *SUBCMD {
+  func NewSUBCMD(...) *SUBCMD {
   	return &SUBCMD{
-
+   		...
   	}
   }
 
@@ -108,6 +108,7 @@ Subcommand's need:
   }
 
   func (sc *SUBCMD) Run(r io.Reader, w io.Writer) error {
+  	...
   	return nil
   }
   ```
@@ -127,9 +128,16 @@ Adding a subcmd to the cli requires a newSUBCMD func:
 
 ```go
 func newSUBCMD(args ...string) (subcmd.SubCommander, []string, error) {
+	const usage = "[-h] ..."
 	var (
 		fs = flag.NewFlagSet("SUBCMD_NAME", flag.ExitOnError)
+		...
 	)
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of SUBCMD_NAME: %s\n", usage)
+		fs.PrintDefaults()
+		os.Exit(2)
+	}
 	fs.Parse(args)
 	return subcmd.NewSUBCMD(...), fs.Args(), nil
 }

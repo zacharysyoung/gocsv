@@ -1,0 +1,56 @@
+Head doesn't have any _test.go unit tests—any and
+all testing happens here.
+-- in --
+A
+1
+2
+3
+4
+-- bottom 1 row --
+{"N": 1}
+-- want --
+A
+1
+-- bottom 2 rows --
+{"N": 2}
+-- want --
+A
+1
+2
+-- to 2nd row from bottom --
+{"N": 2, "FromBottom": true}
+-- want --
+A
+1
+2
+3
+-- to 3rd row from bottom --
+{"N": 3, "FromBottom": true}
+-- want --
+A
+1
+2
+-- to last row from bottom --
+{"N": 1, "FromBottom": true}
+-- want --
+A
+1
+2
+3
+4
+-- n greater-than num rows --
+{"N": 10}
+-- want --
+A
+1
+2
+3
+4
+-- n greater-than num rows, from bottom --
+{"N": 10, "FromBottom": true}
+-- want --
+A
+-- zero rows --
+{"N": 0}
+-- panic --
+N = 0; N must be greater than 0

@@ -18,18 +18,20 @@ const usage = `Usage: csv [-v | -h] <command> <args>
 Commands:
 clean   Prepare input CSV for further processing
 conv    Convert non-CSV formats, like Markdown table, to CSV
-filter  Filter rows of input CSV based on a columns's values
+filter  Filter rows of input CSV based on values in a column
+head    Print beggining rows of input CSV
 rename  Rename CSV's columns
-select  Select (or omit) certain columns of the input CSV
+select  Select (or omit) certain columns of input CSV
 sort    Sort rows of input CSV based on a column's values
-tail    Print the end of the input CSV
-view    Print the input CSV in nicer-to-look-at formats
+tail    Print ending rows of input CSV
+view    Print input CSV in nicer-to-look-at formats
 `
 
 var streamers = map[string]scMaker{
 	"clean":  newClean,
 	"conv":   newConvert,
 	"filter": newFilter,
+	"head":   newHead,
 	"rename": newRename,
 	"select": newSelect,
 	"sort":   newSort,
@@ -211,6 +213,39 @@ func newFilter(args ...string) (subcmd.SubCommander, []string, error) {
 	return sc, fs.Args(), nil
 }
 
+func newHead(args ...string) (subcmd.SubCommander, []string, error) {
+	const usage = "[-h] [-n] [file]"
+	var (
+		fs = flag.NewFlagSet("head", flag.ExitOnError)
+
+		n          = 10
+		fromBottom = false
+	)
+	fs.Func(
+		"n",
+		"the number of rows to print relative to the beginning of the input (default 10); a leading minus sign ('-') makes the terminal row relative to the end of the input, e.g., '-2' will print up to the second-from-last row",
+		func(s string) error {
+			s = strings.TrimSpace(s)
+			if strings.HasPrefix(s, "-") {
+				fromBottom = true
+				s = strings.TrimPrefix(s, "-")
+			}
+			var err error
+			n, err = strconv.Atoi(s)
+			if err != nil || n == 0 {
+				return errors.New("n must be a non-zero integer")
+			}
+			return nil
+		})
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of head: %s\n", usage)
+		fs.PrintDefaults()
+		os.Exit(2)
+	}
+	fs.Parse(args)
+	return subcmd.NewHead(n, fromBottom), fs.Args(), nil
+}
+
 func newRename(args ...string) (subcmd.SubCommander, []string, error) {
 	const usage = "[-h] [-cols] [-names | -regexp [-repl]] [file]"
 	var (
@@ -266,12 +301,12 @@ func newSort(args ...string) (subcmd.SubCommander, []string, error) {
 }
 
 func newTail(args ...string) (subcmd.SubCommander, []string, error) {
-	const usage = "[-h] [-n]"
+	const usage = "[-h] [-n] [file]"
 	var (
 		fs = flag.NewFlagSet("tail", flag.ExitOnError)
 
-		n       int
-		fromTop bool
+		n          = 10
+		fromBottom = false
 	)
 	fs.Func(
 		"n",
@@ -279,12 +314,15 @@ func newTail(args ...string) (subcmd.SubCommander, []string, error) {
 		func(s string) error {
 			s = strings.TrimSpace(s)
 			if strings.HasPrefix(s, "+") {
-				fromTop = true
+				fromBottom = true
 				s = strings.TrimPrefix(s, "+")
 			}
 			var err error
 			n, err = strconv.Atoi(s)
-			return err
+			if err != nil || n < 1 {
+				return errors.New("n must be a positive integer")
+			}
+			return nil
 		})
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of tail:  %s\n", usage)
@@ -293,7 +331,7 @@ func newTail(args ...string) (subcmd.SubCommander, []string, error) {
 	}
 	fs.Parse(args)
 
-	return subcmd.NewTail(n, fromTop), fs.Args(), nil
+	return subcmd.NewTail(n, fromBottom), fs.Args(), nil
 }
 
 func newView(args ...string) (subcmd.SubCommander, []string, error) {
