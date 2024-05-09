@@ -77,3 +77,68 @@ An input file can be specified once and reused by any number of JSON-want/err pa
   Hopefully these will be easy to read, type, and remember/conceptualize.
 
   Exceptions may be unavoidable.
+
+## Subcommand template
+
+Subcommand's need:
+
+- their own file in pkg/subcmd:
+
+  ```go
+  package subcmd
+
+  // SUBCMD ... input CSV ...
+  type SUBCMD struct {
+
+  }
+
+  func NewSUBCMD(n int, fromTop bool) *SUBCMD {
+  	return &SUBCMD{
+
+  	}
+  }
+
+  func (sc *SUBCMD) fromJSON(p []byte) error {
+  	*sc = SUBCMD{}
+  	return json.Unmarshal(p, sc)
+  }
+
+  func (sc *SUBCMD) CheckConfig() error {
+  	return nil
+  }
+
+  func (sc *SUBCMD) Run(r io.Reader, w io.Writer) error {
+  	return nil
+  }
+  ```
+
+- if the subcommand has a txtar file in pkg/subcmd/testdata, it needs an entry in the subcommands map in pkg/subcmd/subcmd_test.go:
+
+  ```go
+  var subcommands = map[string]testSubCommander{
+  ...
+  "SUBCMD_NAME": &SUBCMD{},
+  }
+  ```
+
+### Adding to cmd/cli
+
+Adding a subcmd to the cli requires a newSUBCMD func:
+
+```go
+func newSUBCMD(args ...string) (subcmd.SubCommander, []string, error) {
+	var (
+		fs = flag.NewFlagSet("SUBCMD_NAME", flag.ExitOnError)
+	)
+	fs.Parse(args)
+	return subcmd.NewSUBCMD(...), fs.Args(), nil
+}
+```
+
+and entering that newSUBCMD func in a map, like streamers, that pairs the name from the command line with that func:
+
+```go
+var streamers = map[string]scMaker{
+	"SUBCMD_NAME": newSUBCMD,
+}
+```
