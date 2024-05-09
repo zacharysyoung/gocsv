@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-// Tail reads the last n-number rows of the input CSV.
+// Tail prints bottom rows of the input CSV.
 type Tail struct {
 	N       int
 	FromTop bool
