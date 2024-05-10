@@ -1,4 +1,4 @@
-// Package cut selects or omits specified columns from the input
+// Package cut provides a Runner that selects or omits specified columns from the input
 // CSV.
 package cut
 
@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/zacharysyoung/gocsv/pkg/subcmd"
+	"github.com/zacharysyoung/gocsv/subcmd"
 )
 
 // Cut reads the input CSV record-by-record and writes only specific

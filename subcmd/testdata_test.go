@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zacharysyoung/gocsv/pkg/subcmd"
-	"github.com/zacharysyoung/gocsv/pkg/subcmd/cut"
+	"github.com/zacharysyoung/gocsv/subcmd"
+	"github.com/zacharysyoung/gocsv/subcmd/cut"
 	"golang.org/x/tools/txtar"
 )
 

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/zacharysyoung/gocsv/pkg/subcmd"
+	"github.com/zacharysyoung/gocsv/subcmd"
 )
 
 type View struct {

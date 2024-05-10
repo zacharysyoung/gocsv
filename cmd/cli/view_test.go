@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/zacharysyoung/gocsv/pkg/subcmd"
+	"github.com/zacharysyoung/gocsv/subcmd"
 )
 
 func TestPad(t *testing.T) {

@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zacharysyoung/gocsv/pkg/subcmd"
-	"github.com/zacharysyoung/gocsv/pkg/subcmd/cut"
+	"github.com/zacharysyoung/gocsv/subcmd"
+	"github.com/zacharysyoung/gocsv/subcmd/cut"
 )
 
 const usage = `Usage: csv [-v | -h] <command> <args>

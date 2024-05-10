@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zacharysyoung/gocsv/pkg/subcmd"
+	"github.com/zacharysyoung/gocsv/subcmd"
 	"golang.org/x/tools/txtar"
 )
 
