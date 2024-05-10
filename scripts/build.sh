@@ -10,5 +10,6 @@ set -e
 
 ./scripts/validate.sh
 
+echo '-- building --'
 go build ./cmd/cli 
 mv cli ~/bin/csv   && echo 'installed cli -> ~/bin/csv'
