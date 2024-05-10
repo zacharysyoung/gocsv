@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/zacharysyoung/gocsv/pkg/subcmd"
-	_select "github.com/zacharysyoung/gocsv/pkg/subcmd/select"
+	"github.com/zacharysyoung/gocsv/pkg/subcmd/cut"
 	"golang.org/x/tools/txtar"
 )
 
@@ -25,7 +25,7 @@ var subcommands = map[string]testSubCommander{
 	"clean":   &subcmd.Clean{},
 	"filter":  &subcmd.Filter{},
 	"head":    &subcmd.Head{},
-	"select":  &_select.Select{},
+	"cut":     &cut.Cut{},
 	"sort":    &subcmd.Sort{},
 	"tail":    &subcmd.Tail{},
 }
@@ -45,14 +45,14 @@ func fromJSON(name string, data []byte) (subcmd.SubCommander, error) {
 	case "clean":
 		sc = &subcmd.Clean{}
 		err = json.Unmarshal(data, sc)
+	case "cut":
+		sc = &cut.Cut{}
+		err = json.Unmarshal(data, sc)
 	case "filter":
 		sc = &subcmd.Filter{}
 		err = json.Unmarshal(data, sc)
 	case "head":
 		sc = &subcmd.Head{}
-		err = json.Unmarshal(data, sc)
-	case "select":
-		sc = &_select.Select{}
 		err = json.Unmarshal(data, sc)
 	case "sort":
 		sc = &subcmd.Sort{}
@@ -60,7 +60,8 @@ func fromJSON(name string, data []byte) (subcmd.SubCommander, error) {
 	case "tail":
 		sc = &subcmd.Tail{}
 		err = json.Unmarshal(data, sc)
-
+	default:
+		panic(fmt.Errorf("name %q not registered with json.Unmarshaler", name))
 	}
 	return sc, err
 }

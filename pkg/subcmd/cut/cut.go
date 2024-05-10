@@ -1,4 +1,6 @@
-package _select
+// Package cut selects or omits specified columns from the input
+// CSV.
+package cut
 
 import (
 	"encoding/csv"
@@ -8,28 +10,28 @@ import (
 	"github.com/zacharysyoung/gocsv/pkg/subcmd"
 )
 
-// Select reads the input CSV record-by-record and writes only specific
+// Cut reads the input CSV record-by-record and writes only specific
 // fields of each record to the output CSV.
-type Select struct {
+type Cut struct {
 	ColGroups []subcmd.ColGroup // 1-based indices of the columns to include, or exclude
 
 	Exclude bool
 }
 
-func NewSelect(groups []subcmd.ColGroup, exclude bool) *Select {
-	return &Select{ColGroups: groups, Exclude: exclude}
+func NewCut(groups []subcmd.ColGroup, exclude bool) *Cut {
+	return &Cut{ColGroups: groups, Exclude: exclude}
 }
 
-func (sc *Select) fromJSON(p []byte) error {
-	*sc = Select{}
+func (sc *Cut) fromJSON(p []byte) error {
+	*sc = Cut{}
 	return json.Unmarshal(p, sc)
 }
 
-func (sc *Select) CheckConfig() error {
+func (sc *Cut) CheckConfig() error {
 	return nil
 }
 
-func (sc *Select) Run(r io.Reader, w io.Writer) error {
+func (sc *Cut) Run(r io.Reader, w io.Writer) error {
 	rr := csv.NewReader(r)
 	ww := csv.NewWriter(w)
 

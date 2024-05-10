@@ -11,18 +11,18 @@ import (
 	"strings"
 
 	"github.com/zacharysyoung/gocsv/pkg/subcmd"
-	_select "github.com/zacharysyoung/gocsv/pkg/subcmd/select"
+	"github.com/zacharysyoung/gocsv/pkg/subcmd/cut"
 )
 
 const usage = `Usage: csv [-v | -h] <command> <args>
 
 Commands:
 clean   Prepare input CSV for further processing
+cut     Select (or omit) certain columns of input CSV
 conv    Convert non-CSV formats, like Markdown table, to CSV
 filter  Filter rows of input CSV based on values in a column
 head    Print beggining rows of input CSV
 rename  Rename CSV's columns
-select  Select (or omit) certain columns of input CSV
 sort    Sort rows of input CSV based on a column's values
 tail    Print ending rows of input CSV
 view    Print input CSV in nicer-to-look-at formats
@@ -34,7 +34,7 @@ var streamers = map[string]scMaker{
 	"filter": newFilter,
 	"head":   newHead,
 	"rename": newRename,
-	"select": newSelect,
+	"select": newCut,
 	"sort":   newSort,
 	"tail":   newTail,
 	"view":   newView,
@@ -135,6 +135,20 @@ func newConvert(args ...string) (subcmd.SubCommander, []string, error) {
 
 	sc := subcmd.NewConvert(*fieldsFlag, *markdownFlag)
 	return sc, fs.Args(), nil
+}
+
+func newCut(args ...string) (subcmd.SubCommander, []string, error) {
+	var (
+		fs       = flag.NewFlagSet("cut", flag.ExitOnError)
+		colsflag = fs.String("cols", "", "a range of columns to select, e.g., 1,3-5,2")
+		exflag   = fs.Bool("exclude", false, "invert the cols selection to exclude those columns")
+	)
+	fs.Parse(args)
+	groups, err := parseCols(*colsflag)
+	if err != nil {
+		return nil, nil, err
+	}
+	return cut.NewCut(groups, *exflag), fs.Args(), nil
 }
 
 func newFilter(args ...string) (subcmd.SubCommander, []string, error) {
@@ -271,20 +285,6 @@ func newRename(args ...string) (subcmd.SubCommander, []string, error) {
 		names = names[:0]
 	}
 	return subcmd.NewRename(groups, names, *regexpflag, *replflag), fs.Args(), nil
-}
-
-func newSelect(args ...string) (subcmd.SubCommander, []string, error) {
-	var (
-		fs       = flag.NewFlagSet("select", flag.ExitOnError)
-		colsflag = fs.String("cols", "", "a range of columns to select, e.g., 1,3-5,2")
-		exflag   = fs.Bool("exclude", false, "invert the cols selection to exclude those columns")
-	)
-	fs.Parse(args)
-	groups, err := parseCols(*colsflag)
-	if err != nil {
-		return nil, nil, err
-	}
-	return _select.NewSelect(groups, *exflag), fs.Args(), nil
 }
 
 func newSort(args ...string) (subcmd.SubCommander, []string, error) {
