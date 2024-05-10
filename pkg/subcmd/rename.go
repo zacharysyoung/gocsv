@@ -94,7 +94,7 @@ func rename(header []string, cols []int, names []string) ([]string, error) {
 	if len(names) != len(cols) {
 		return nil, fmt.Errorf("%w: %d names != %d cols", errWrongCounts, len(names), len(cols))
 	}
-	cols = base0Cols(cols)
+	cols = Base0Cols(cols)
 	for i, x := range cols {
 		header[x] = names[i]
 	}
@@ -111,7 +111,7 @@ func replace(header []string, cols []int, sre, repl string) (hdr []string, err e
 
 	hdr = make([]string, len(header))
 	copy(hdr, header)
-	for _, x := range base0Cols(cols) {
+	for _, x := range Base0Cols(cols) {
 		hdr[x] = re.ReplaceAllString(header[x], repl)
 	}
 	return

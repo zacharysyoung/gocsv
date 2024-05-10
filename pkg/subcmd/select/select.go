@@ -1,20 +1,22 @@
-package subcmd
+package _select
 
 import (
 	"encoding/csv"
 	"encoding/json"
 	"io"
+
+	"github.com/zacharysyoung/gocsv/pkg/subcmd"
 )
 
 // Select reads the input CSV record-by-record and writes only specific
 // fields of each record to the output CSV.
 type Select struct {
-	ColGroups []ColGroup // 1-based indices of the columns to include, or exclude
+	ColGroups []subcmd.ColGroup // 1-based indices of the columns to include, or exclude
 
 	Exclude bool
 }
 
-func NewSelect(groups []ColGroup, exclude bool) *Select {
+func NewSelect(groups []subcmd.ColGroup, exclude bool) *Select {
 	return &Select{ColGroups: groups, Exclude: exclude}
 }
 
@@ -39,7 +41,7 @@ func (sc *Select) Run(r io.Reader, w io.Writer) error {
 		return err
 	}
 
-	cols, err := FinalizeCols(sc.ColGroups, header)
+	cols, err := subcmd.FinalizeCols(sc.ColGroups, header)
 	if err != nil {
 		return err
 	}
@@ -47,7 +49,7 @@ func (sc *Select) Run(r io.Reader, w io.Writer) error {
 	if len(cols) > 0 && sc.Exclude {
 		cols = exclude(cols, header)
 	}
-	cols = base0Cols(cols)
+	cols = subcmd.Base0Cols(cols)
 
 	row := make([]string, len(cols))
 	write := func(rec []string) {

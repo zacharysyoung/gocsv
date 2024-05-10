@@ -63,7 +63,7 @@ func sort(recs [][]string, cols []int, order int) {
 		panic(errors.New("order must be -1 or 1"))
 	}
 	types := InferCols(recs, cols)
-	cols = base0Cols(cols)
+	cols = Base0Cols(cols)
 	slices.SortFunc(recs, func(a, b []string) int {
 		for i, ix := range cols {
 			if x := compare2(a[ix], b[ix], types[i]); x != 0 {

@@ -65,8 +65,8 @@ func Base1Cols(header []string) (newCols []int) {
 	return
 }
 
-// base0Cols turns friendly 1-based indexes to 0-based indexes.
-func base0Cols(cols []int) (newCols []int) {
+// Base0Cols turns friendly 1-based indexes to 0-based indexes.
+func Base0Cols(cols []int) (newCols []int) {
 	for _, x := range cols {
 		newCols = append(newCols, x-1)
 	}

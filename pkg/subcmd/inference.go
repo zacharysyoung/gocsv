@@ -56,7 +56,7 @@ func InferCols(recs [][]string, cols []int) []InferredType {
 		panic(errors.New("empty cols"))
 	}
 
-	cols = base0Cols(cols)
+	cols = Base0Cols(cols)
 
 	types := make([]InferredType, len(cols))
 	for i, xi := range cols {

@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/zacharysyoung/gocsv/pkg/subcmd"
+	_select "github.com/zacharysyoung/gocsv/pkg/subcmd/select"
 )
 
 const usage = `Usage: csv [-v | -h] <command> <args>
@@ -283,7 +284,7 @@ func newSelect(args ...string) (subcmd.SubCommander, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return subcmd.NewSelect(groups, *exflag), fs.Args(), nil
+	return _select.NewSelect(groups, *exflag), fs.Args(), nil
 }
 
 func newSort(args ...string) (subcmd.SubCommander, []string, error) {

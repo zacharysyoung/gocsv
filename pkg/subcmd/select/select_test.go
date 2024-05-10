@@ -1,4 +1,4 @@
-package subcmd
+package _select
 
 import (
 	"reflect"
