@@ -1,10 +1,9 @@
-// Package cut provides a Runner that selects or omits specified columns from the input
-// CSV.
+// Package cut implements a Runner that selects or omits specified
+// columns.
 package cut
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"io"
 
 	"github.com/zacharysyoung/gocsv/subcmd"
@@ -20,15 +19,6 @@ type Cut struct {
 
 func NewCut(groups []subcmd.ColGroup, exclude bool) *Cut {
 	return &Cut{ColGroups: groups, Exclude: exclude}
-}
-
-func (sc *Cut) fromJSON(p []byte) error {
-	*sc = Cut{}
-	return json.Unmarshal(p, sc)
-}
-
-func (sc *Cut) CheckConfig() error {
-	return nil
 }
 
 func (sc *Cut) Run(r io.Reader, w io.Writer) error {

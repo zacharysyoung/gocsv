@@ -16,7 +16,7 @@ import (
 
 var quoteflag = flag.Bool("quote", false, "print errors with quoted rows instead of pretty-printed")
 
-var scMakers = map[string]scMaker{
+var scMakers = map[string]runnerMaker{
 	"view": newView,
 }
 

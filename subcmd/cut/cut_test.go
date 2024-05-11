@@ -1,8 +1,12 @@
 package cut
 
 import (
+	"encoding/json"
+	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/zacharysyoung/gocsv/subcmd"
 )
 
 func TestExclude(t *testing.T) {
@@ -33,4 +37,19 @@ func TestExclude(t *testing.T) {
 			t.Errorf("excludeCols(%v, ...) = %v; want %v", tc.cols, got, tc.want)
 		}
 	}
+}
+
+func fromJSON(data []byte) (subcmd.Runner, error) {
+	cut := &Cut{}
+	err := json.Unmarshal(data, cut)
+	return cut, err
+}
+
+func TestTestdata(t *testing.T) {
+	path, err := filepath.Abs("./testdata/cut.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tdr := subcmd.NewTestdataRunner(path, fromJSON, t)
+	tdr.Run()
 }

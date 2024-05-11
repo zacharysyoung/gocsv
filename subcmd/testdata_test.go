@@ -2,64 +2,41 @@ package subcmd_test
 
 import (
 	"bytes"
-	"encoding/json"
-	"flag"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/zacharysyoung/gocsv/subcmd"
-	"github.com/zacharysyoung/gocsv/subcmd/cut"
 	"golang.org/x/tools/txtar"
 )
 
-var quoteflag = flag.Bool("quote", false, "print errors with quoted rows instead of pretty-printed")
+// var quoteflag = flag.Bool("quote", false, "print errors with quoted rows instead of pretty-printed")
 
 type testSubCommander interface {
-	subcmd.SubCommander
+	subcmd.Runner
 }
 
 var subcommands = map[string]testSubCommander{
-	"convert": &subcmd.Convert{},
-	"clean":   &subcmd.Clean{},
-	"filter":  &subcmd.Filter{},
-	"head":    &subcmd.Head{},
-	"cut":     &cut.Cut{},
-	"sort":    &subcmd.Sort{},
-	"tail":    &subcmd.Tail{},
+	// "convert": &subcmd.Convert{},
+	// "clean":   &subcmd.Clean{},
+	// "filter":  &subcmd.Filter{},
+	// "head":    &subcmd.Head{},
+	// "cut":     &cut.Cut{},
+	// "sort":    &subcmd.Sort{},
+	// "tail":    &subcmd.Tail{},
 }
 
-func fromJSON(name string, data []byte) (subcmd.SubCommander, error) {
+func fromJSON(name string, data []byte) (subcmd.Runner, error) {
 	if len(data) == 0 {
 		data = []byte("{}")
 	}
 	var (
-		sc  subcmd.SubCommander
+		sc  subcmd.Runner
 		err error
 	)
 	switch name {
-	case "convert":
-		sc = &subcmd.Convert{}
-		err = json.Unmarshal(data, sc)
-	case "clean":
-		sc = &subcmd.Clean{}
-		err = json.Unmarshal(data, sc)
-	case "cut":
-		sc = &cut.Cut{}
-		err = json.Unmarshal(data, sc)
-	case "filter":
-		sc = &subcmd.Filter{}
-		err = json.Unmarshal(data, sc)
-	case "head":
-		sc = &subcmd.Head{}
-		err = json.Unmarshal(data, sc)
-	case "sort":
-		sc = &subcmd.Sort{}
-		err = json.Unmarshal(data, sc)
-	case "tail":
-		sc = &subcmd.Tail{}
-		err = json.Unmarshal(data, sc)
+
 	default:
 		panic(fmt.Errorf("name %q not registered with json.Unmarshaler", name))
 	}
@@ -152,11 +129,11 @@ func TestCmds(t *testing.T) {
 					default:
 						got := buf.String()
 						if got != want {
-							if *quoteflag {
-								t.Errorf("\ngot:\n%q\nwant:\n%q", got, want)
-							} else {
-								t.Errorf("\ngot:\n%s\nwant:\n%s", got, want)
-							}
+							// if *quoteflag {
+							// 	t.Errorf("\ngot:\n%q\nwant:\n%q", got, want)
+							// } else {
+							t.Errorf("\ngot:\n%s\nwant:\n%s", got, want)
+							// }
 						}
 					}
 				})

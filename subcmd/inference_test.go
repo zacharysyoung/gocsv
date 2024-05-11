@@ -6,38 +6,73 @@ import (
 	"time"
 )
 
-func TestInferType(t *testing.T) {
+func TestInfer(t *testing.T) {
+	jan1 := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 	testCases := []struct {
-		s    string
-		want InferredType
+		s string
+		t InferredType
+		v any
 	}{
-		{"-1.0", Number},
-		{"-1", Number},
-		{"0", Number},
-		{"0.0", Number},
-		{"1", Number},
-		{"1.0", Number},
-		{"True", Bool},
-		{"true", Bool},
-		{"TrUe", Bool},
-		{"T", Bool},
-		{"false", Bool},
-		{"False", Bool},
-		{"falSE", Bool},
-		{"F", Bool},
-		{"2000-1-1", Time},
-		{"2000-01-01", Time},
-		{"1/1/2000", Time},
-		{"01/01/2000", Time},
-	}
+		{"-1.0", Number, -1.0},
+		{"-1", Number, -1.0},
+		{"0", Number, 0.0},
+		{"0.0", Number, 0.0},
+		{"1", Number, 1.0},
+		{"1.0", Number, 1.0},
 
+		{"True", Bool, true},
+		{"true", Bool, true},
+		{"TrUe", Bool, true},
+		{"T", Bool, true},
+		{"false", Bool, false},
+		{"False", Bool, false},
+		{"falSE", Bool, false},
+		{"F", Bool, false},
+
+		{"2000-1-1", Time, jan1},
+		{"2000-01-01", Time, jan1},
+		{"1/1/2000", Time, jan1},
+		{"01/01/2000", Time, jan1},
+	}
 	for _, tc := range testCases {
-		if got := inferType(tc.s); got != tc.want {
-			t.Errorf("inferType(%q) = %v != %v", tc.s, got, tc.want)
+		v, tt := Infer(tc.s)
+		if tt != tc.t || v != tc.v {
+			t.Errorf("Infer(%s) = %v, %s; want %v, %s", tc.s, v, tt, tc.v, tc.t)
 		}
 	}
-
 }
+
+// func TestInferType(t *testing.T) {
+// 	testCases := []struct {
+// 		s    string
+// 		want InferredType
+// 	}{
+// 		{"-1.0", Number},
+// 		{"-1", Number},
+// 		{"0", Number},
+// 		{"0.0", Number},
+// 		{"1", Number},
+// 		{"1.0", Number},
+// 		{"True", Bool},
+// 		{"true", Bool},
+// 		{"TrUe", Bool},
+// 		{"T", Bool},
+// 		{"false", Bool},
+// 		{"False", Bool},
+// 		{"falSE", Bool},
+// 		{"F", Bool},
+// 		{"2000-1-1", Time},
+// 		{"2000-01-01", Time},
+// 		{"1/1/2000", Time},
+// 		{"01/01/2000", Time},
+// 	}
+
+// 	for _, tc := range testCases {
+// 		if got := InferType(tc.s); got != tc.want {
+// 			t.Errorf("inferType(%q) = %v != %v", tc.s, got, tc.want)
+// 		}
+// 	}
+// }
 
 func TestInferCols(t *testing.T) {
 	type cols []int
@@ -146,7 +181,7 @@ func TestCompareBools(t *testing.T) {
 		{false, true, 1},
 		{false, false, 0},
 	} {
-		if got := compareBools(tc.a, tc.b); got != tc.want {
+		if got := CompareBools(tc.a, tc.b); got != tc.want {
 			t.Errorf("compareBools(%t, %t) got %v; want %v", tc.a, tc.b, got, tc.want)
 		}
 	}

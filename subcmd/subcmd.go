@@ -7,8 +7,7 @@ import (
 	"strings"
 )
 
-type SubCommander interface {
-	CheckConfig() error
+type Runner interface {
 	Run(io.Reader, io.Writer) error
 }
 

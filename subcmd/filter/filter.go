@@ -1,4 +1,4 @@
-package subcmd
+package filter
 
 import (
 	"encoding/csv"
@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	sc "github.com/zacharysyoung/gocsv/subcmd"
 )
 
 type Operator string
@@ -63,18 +65,14 @@ func (sc *Filter) fromJSON(p []byte) error {
 	return json.Unmarshal(p, sc)
 }
 
-func (sc *Filter) CheckConfig() error {
-	return nil
-}
-
-func (sc *Filter) Run(r io.Reader, w io.Writer) error {
+func (xx *Filter) Run(r io.Reader, w io.Writer) error {
 	var (
 		reMatcher *regexp.Regexp
 		err       error
 	)
-	if sc.Operator == Re {
-		expr := sc.Value
-		if sc.CaseInsensitive {
+	if xx.Operator == Re {
+		expr := xx.Value
+		if xx.CaseInsensitive {
 			expr = fmt.Sprintf("(?i)%s", expr)
 		}
 		if reMatcher, err = regexp.Compile(expr); err != nil {
@@ -94,9 +92,9 @@ func (sc *Filter) Run(r io.Reader, w io.Writer) error {
 	}
 	ww.Write(header)
 
-	col := Base0Cols([]int{sc.Col})[0]
+	col := sc.Base0Cols([]int{xx.Col})[0]
 	var record []string
-	switch sc.Operator {
+	switch xx.Operator {
 	case Re:
 		for {
 			if record, err = rr.Read(); err != nil {
@@ -106,7 +104,7 @@ func (sc *Filter) Run(r io.Reader, w io.Writer) error {
 				return err
 			}
 			matched := reMatcher.MatchString(record[col])
-			if sc.Exclude {
+			if xx.Exclude {
 				matched = !matched
 			}
 			if matched {
@@ -116,30 +114,20 @@ func (sc *Filter) Run(r io.Reader, w io.Writer) error {
 			}
 		}
 	default:
-		it := inferType(sc.Value)
-		if sc.NoInference {
-			it = String
+		var (
+			val any
+			it  sc.InferredType
+		)
+		switch xx.NoInference {
+		case true:
+			it = sc.String
+			val = xx.Value
+		case false:
+			val, it = sc.Infer(xx.Value)
 		}
 
-		var val any
-		switch it {
-		case String:
-			val = sc.Value
-			if sc.CaseInsensitive {
-				val = strings.ToLower(sc.Value)
-			}
-		case Number:
-			if val, err = toNumber(sc.Value); err != nil {
-				return err
-			}
-		case Time:
-			if val, err = toTime(sc.Value); err != nil {
-				return err
-			}
-		case Bool:
-			if val, err = toBool(sc.Value); err != nil {
-				return err
-			}
+		if it == sc.String && xx.CaseInsensitive {
+			val = strings.ToLower(val.(string))
 		}
 
 		for i := 1; ; i++ {
@@ -149,9 +137,9 @@ func (sc *Filter) Run(r io.Reader, w io.Writer) error {
 				}
 				return err
 			}
-			m, err := match(record[col], sc.Operator, val, it, sc.CaseInsensitive, sc.Exclude)
+			m, err := match(record[col], xx.Operator, val, it, xx.CaseInsensitive, xx.Exclude)
 			if err != nil {
-				sit := inferType(record[col])
+				_, sit := sc.Infer(record[col])
 				return fmt.Errorf("evaluating row %d cell %d, could not compare %s %q to %s %v", i, col+1, sit, record[col], it, val)
 			}
 			if m {
@@ -173,10 +161,10 @@ func (sc *Filter) Run(r io.Reader, w io.Writer) error {
 //
 // If lower is specified, s will be lower-cased before comparing to
 // an assumed already lower-cased v.
-func match(s string, op Operator, v any, it InferredType, lower, negate bool) (bool, error) {
+func match(s string, op Operator, v any, it sc.InferredType, lower, negate bool) (bool, error) {
 	_match := func() (bool, error) {
 		switch it {
-		case String:
+		case sc.String:
 			if lower {
 				s = strings.ToLower(s)
 			}
@@ -194,8 +182,8 @@ func match(s string, op Operator, v any, it InferredType, lower, negate bool) (b
 			case Gte:
 				return s >= v.(string), nil
 			}
-		case Number:
-			x, err := toNumber(s)
+		case sc.Number:
+			x, err := sc.ToNumber(s)
 			switch op {
 			case Eq:
 				return x == v.(float64), err
@@ -210,8 +198,8 @@ func match(s string, op Operator, v any, it InferredType, lower, negate bool) (b
 			case Gte:
 				return x >= v.(float64), err
 			}
-		case Time:
-			a, err := toTime(s)
+		case sc.Time:
+			a, err := sc.ToTime(s)
 			b := v.(time.Time)
 			switch op {
 			case Eq:
@@ -227,8 +215,8 @@ func match(s string, op Operator, v any, it InferredType, lower, negate bool) (b
 			case Gte:
 				return a.After(b) || a.Equal(b), err
 			}
-		case Bool:
-			x, err := toBool(s)
+		case sc.Bool:
+			x, err := sc.ToBool(s)
 			switch op {
 			case Eq:
 				return x == v.(bool), err

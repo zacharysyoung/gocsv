@@ -22,25 +22,25 @@ cut     Select (or omit) certain columns of input CSV
 conv    Convert non-CSV formats, like Markdown table, to CSV
 filter  Filter rows of input CSV based on values in a column
 head    Print beggining rows of input CSV
-rename  Rename CSV's columns
+rename  Rename input CSV's columns
 sort    Sort rows of input CSV based on a column's values
 tail    Print ending rows of input CSV
-view    Print input CSV in nicer-to-look-at formats
+view    Print input CSV in nice-to-look-at formats
 `
 
-var streamers = map[string]scMaker{
+type runnerMaker func(...string) (subcmd.Runner, []string, error)
+
+var runners = map[string]runnerMaker{
 	"clean":  newClean,
 	"conv":   newConvert,
+	"cut":    newCut,
 	"filter": newFilter,
 	"head":   newHead,
 	"rename": newRename,
-	"select": newCut,
 	"sort":   newSort,
 	"tail":   newTail,
 	"view":   newView,
 }
-
-type scMaker func(...string) (subcmd.SubCommander, []string, error)
 
 func main() {
 	if len(os.Args) < 2 {
@@ -56,7 +56,7 @@ func main() {
 
 	name := os.Args[1]
 
-	newfunc, ok := streamers[name]
+	newfunc, ok := runners[name]
 	if !ok {
 		fmt.Fprintf(os.Stderr, "error: no command %s\n", name)
 		printHelp()
@@ -79,10 +79,6 @@ func main() {
 		errorBadArgs(fmt.Errorf("got %d extra args; %s allows for only one named file", len(tailArgs), name))
 	}
 
-	if err := sc.CheckConfig(); err != nil {
-		errorBadArgs(err)
-	}
-
 	if err := sc.Run(r, os.Stdout); err != nil {
 		errorOut("", err)
 	}
@@ -90,7 +86,7 @@ func main() {
 	return
 }
 
-func newClean(args ...string) (subcmd.SubCommander, []string, error) {
+func newClean(args ...string) (subcmd.Runner, []string, error) {
 	const usage = "[-h] [-trim]"
 
 	var (
@@ -110,7 +106,7 @@ func newClean(args ...string) (subcmd.SubCommander, []string, error) {
 	return sc, fs.Args(), nil
 }
 
-func newConvert(args ...string) (subcmd.SubCommander, []string, error) {
+func newConvert(args ...string) (subcmd.Runner, []string, error) {
 	const usage = "[-h] -fields | -md [file]"
 
 	var (
@@ -137,7 +133,7 @@ func newConvert(args ...string) (subcmd.SubCommander, []string, error) {
 	return sc, fs.Args(), nil
 }
 
-func newCut(args ...string) (subcmd.SubCommander, []string, error) {
+func newCut(args ...string) (subcmd.Runner, []string, error) {
 	var (
 		fs       = flag.NewFlagSet("cut", flag.ExitOnError)
 		colsflag = fs.String("cols", "", "a range of columns to select, e.g., 1,3-5,2")
@@ -151,7 +147,7 @@ func newCut(args ...string) (subcmd.SubCommander, []string, error) {
 	return cut.NewCut(groups, *exflag), fs.Args(), nil
 }
 
-func newFilter(args ...string) (subcmd.SubCommander, []string, error) {
+func newFilter(args ...string) (subcmd.Runner, []string, error) {
 	const usage = "[-h]  -col col_num -eq|-ne|-lt|-lte|-gt|-gte|-re value  [-i] [-exclude] [-no-infer] [file]"
 
 	var (
@@ -228,7 +224,7 @@ func newFilter(args ...string) (subcmd.SubCommander, []string, error) {
 	return sc, fs.Args(), nil
 }
 
-func newHead(args ...string) (subcmd.SubCommander, []string, error) {
+func newHead(args ...string) (subcmd.Runner, []string, error) {
 	const usage = "[-h] [-n] [file]"
 	var (
 		fs = flag.NewFlagSet("head", flag.ExitOnError)
@@ -261,7 +257,7 @@ func newHead(args ...string) (subcmd.SubCommander, []string, error) {
 	return subcmd.NewHead(n, fromBottom), fs.Args(), nil
 }
 
-func newRename(args ...string) (subcmd.SubCommander, []string, error) {
+func newRename(args ...string) (subcmd.Runner, []string, error) {
 	const usage = "[-h] [-cols] [-names | -regexp [-repl]] [file]"
 	var (
 		fs         = flag.NewFlagSet("select", flag.ExitOnError)
@@ -287,7 +283,7 @@ func newRename(args ...string) (subcmd.SubCommander, []string, error) {
 	return subcmd.NewRename(groups, names, *regexpflag, *replflag), fs.Args(), nil
 }
 
-func newSort(args ...string) (subcmd.SubCommander, []string, error) {
+func newSort(args ...string) (subcmd.Runner, []string, error) {
 	var (
 		fs       = flag.NewFlagSet("sort", flag.ExitOnError)
 		colsflag = fs.String("cols", "", "a range of columns to use as the sort key, e.g., 1,3-5,2")
@@ -301,7 +297,7 @@ func newSort(args ...string) (subcmd.SubCommander, []string, error) {
 	return subcmd.NewSort(cols, *revflag, false), fs.Args(), nil
 }
 
-func newTail(args ...string) (subcmd.SubCommander, []string, error) {
+func newTail(args ...string) (subcmd.Runner, []string, error) {
 	const usage = "[-h] [-n] [file]"
 	var (
 		fs = flag.NewFlagSet("tail", flag.ExitOnError)
@@ -335,7 +331,7 @@ func newTail(args ...string) (subcmd.SubCommander, []string, error) {
 	return subcmd.NewTail(n, fromBottom), fs.Args(), nil
 }
 
-func newView(args ...string) (subcmd.SubCommander, []string, error) {
+func newView(args ...string) (subcmd.Runner, []string, error) {
 	const usage = "[-h] [-box [-maxh] | -fields | -md] [-maxw]"
 	var (
 		fs         = flag.NewFlagSet("view", flag.ExitOnError)

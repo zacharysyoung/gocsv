@@ -33,17 +33,17 @@ func (it InferredType) String() string {
 	}
 }
 
-func inferType(x string) InferredType {
-	switch {
-	default:
-		return String
-	case isNumber(x):
-		return Number
-	case isBool(x):
-		return Bool
-	case isTime(x):
-		return Time
+func Infer(s string) (val any, it InferredType) {
+	if val, err := ToNumber(s); err == nil {
+		return val, Number
 	}
+	if val, err := ToBool(s); err == nil {
+		return val, Bool
+	}
+	if val, err := ToTime(s); err == nil {
+		return val, Time
+	}
+	return s, String
 }
 
 // InferCols infers the types of 1-based cols of recs; panics
@@ -58,21 +58,25 @@ func InferCols(recs [][]string, cols []int) []InferredType {
 
 	cols = Base0Cols(cols)
 
-	types := make([]InferredType, len(cols))
-	for i, xi := range cols {
-		types[i] = inferType(recs[0][xi])
+	var (
+		it    InferredType
+		types = make([]InferredType, len(cols))
+	)
+
+	for i, col := range cols {
+		_, it = Infer(recs[0][col])
+		types[i] = it
 	}
 
 	if len(recs) == 1 {
 		return types
 	}
 
-	var t InferredType
 	for i := 1; i < len(recs); i++ {
-		for j, jx := range cols {
+		for j, col := range cols {
 			if types[j] != String {
-				t = inferType(recs[i][jx])
-				if t != types[j] {
+				_, it = Infer(recs[i][col])
+				if it != types[j] {
 					types[j] = String
 				}
 			}
@@ -82,21 +86,21 @@ func InferCols(recs [][]string, cols []int) []InferredType {
 	return types
 }
 
-func isNumber(x string) bool {
-	_, err := toNumber(x)
-	return err == nil
-}
+// func isNumber(x string) bool {
+// 	_, err := toNumber(x)
+// 	return err == nil
+// }
 
-func toNumber(x string) (float64, error) {
+func ToNumber(x string) (float64, error) {
 	return strconv.ParseFloat(x, 64)
 }
 
-func isBool(x string) bool {
-	_, err := toBool(x)
-	return err == nil
-}
+// func isBool(x string) bool {
+// 	_, err := toBool(x)
+// 	return err == nil
+// }
 
-func toBool(x string) (bool, error) {
+func ToBool(x string) (bool, error) {
 	x = strings.ToLower(x)
 	if x == "true" || x == "false" || x == "t" || x == "f" {
 		return x == "true" || x == "t", nil
@@ -104,7 +108,7 @@ func toBool(x string) (bool, error) {
 	return false, errors.New("not a bool")
 }
 
-func compareBools(a, b bool) int {
+func CompareBools(a, b bool) int {
 	if a && !b {
 		return -1
 	}
@@ -121,12 +125,12 @@ var layouts = []string{
 	"01/02/2006",
 }
 
-func isTime(x string) bool {
-	_, err := toTime(x)
-	return err == nil
-}
+// func isTime(x string) bool {
+// 	_, err := toTime(x)
+// 	return err == nil
+// }
 
-func toTime(x string) (time.Time, error) {
+func ToTime(x string) (time.Time, error) {
 	for _, layout := range layouts {
 		if t, err := time.Parse(layout, x); err == nil {
 			return t, nil
@@ -138,7 +142,7 @@ func toTime(x string) (time.Time, error) {
 func compare1(a, b any, it InferredType) int {
 	switch it {
 	case Bool:
-		return compareBools(a.(bool), b.(bool))
+		return CompareBools(a.(bool), b.(bool))
 	case Number:
 		return cmp.Compare(a.(float64), b.(float64))
 	case Time:
@@ -151,16 +155,16 @@ func compare1(a, b any, it InferredType) int {
 func compare2(a, b string, it InferredType) int {
 	switch it {
 	case Bool:
-		x, _ := toBool(a)
-		y, _ := toBool(b)
-		return compareBools(x, y)
+		x, _ := ToBool(a)
+		y, _ := ToBool(b)
+		return CompareBools(x, y)
 	case Number:
-		x, _ := toNumber(a)
-		y, _ := toNumber(b)
+		x, _ := ToNumber(a)
+		y, _ := ToNumber(b)
 		return cmp.Compare(x, y)
 	case Time:
-		x, _ := toTime(a)
-		y, _ := toTime(b)
+		x, _ := ToTime(a)
+		y, _ := ToTime(b)
 		return x.Compare(y)
 	default:
 		return cmp.Compare(a, b)
