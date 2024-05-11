@@ -3,5 +3,5 @@
 set -e
 
 echo '-- validating --'
-go vet  ./... && echo 'ok	vet'
+go vet  ./... && echo 'vet ok' || exit 1
 go test ./...

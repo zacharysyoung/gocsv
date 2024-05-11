@@ -12,4 +12,4 @@ set -e
 
 echo '-- building --'
 go build ./cmd/cli 
-mv cli ~/bin/csv   && echo 'installed cli -> ~/bin/csv'
+mv cli ~/bin/csv   && echo 'installed cli -> ~/bin/csv' || exit 1
