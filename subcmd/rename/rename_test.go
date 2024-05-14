@@ -1,4 +1,4 @@
-package subcmd
+package rename
 
 import (
 	"errors"

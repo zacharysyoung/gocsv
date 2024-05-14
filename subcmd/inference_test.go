@@ -79,13 +79,13 @@ func TestInferCols(t *testing.T) {
 	type types []InferredType
 	testCases := []struct {
 		name string
-		rows rows
+		Rows Rows
 		cols cols
 		want types
 	}{
 		{
 			name: "single uniform number",
-			rows: rows{
+			Rows: Rows{
 				{"1"},
 				{"1.0"},
 				{"-0"},
@@ -95,7 +95,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "single uniform bool",
-			rows: rows{
+			Rows: Rows{
 				{"true"},
 				{"false"},
 				{"f"},
@@ -105,7 +105,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "single uniform string",
-			rows: rows{
+			Rows: Rows{
 				{"a"},
 				{"b"},
 				{"🤓"},
@@ -115,7 +115,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "single mixed string",
-			rows: rows{
+			Rows: Rows{
 				{"1"},
 				{"a"},
 				{"1"},
@@ -125,7 +125,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "multi mixed string",
-			rows: rows{
+			Rows: Rows{
 				{"1", "true"},
 				{"a", "false"},
 				{"1", "0"},
@@ -137,7 +137,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "specific columns",
-			rows: rows{
+			Rows: Rows{
 				{"1", "true", "1/10/2000"},
 				{"2", "false", "1/11/2000"},
 				{"3", "true", "1/12/2000"},
@@ -149,7 +149,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "datetime mixed layouts",
-			rows: rows{
+			Rows: Rows{
 				{"1/10/2000"},
 				{"2000-1-1"},
 				{"2000-01-01"},
@@ -164,8 +164,8 @@ func TestInferCols(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := InferCols(tc.rows, tc.cols); !reflect.DeepEqual(types(got), tc.want) {
-				t.Errorf("\ninferCols(..., %v) for\n%s\ngot:  %v\nwant: %v", tc.cols, rows(tc.rows), got, tc.want)
+			if got := InferCols(tc.Rows, tc.cols); !reflect.DeepEqual(types(got), tc.want) {
+				t.Errorf("\ninferCols(..., %v) for\n%s\ngot:  %v\nwant: %v", tc.cols, Rows(tc.Rows), got, tc.want)
 			}
 		})
 	}
@@ -218,7 +218,7 @@ func TestCompare(t *testing.T) {
 		{String, "b", "b", 0},
 		{String, "b", "a", 1},
 	} {
-		if got := compare1(tc.a, tc.b, tc.it); got != tc.want {
+		if got := Compare1(tc.a, tc.b, tc.it); got != tc.want {
 			switch tc.it {
 			case Number:
 				t.Errorf("compare(%g, %g) got %d; want %d", tc.a, tc.b, got, tc.want)

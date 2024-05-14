@@ -24,27 +24,27 @@ func NewConvert(fields, markdown bool) *Convert {
 	}
 }
 
-func (sc *Convert) fromJSON(p []byte) error {
-	*sc = Convert{}
-	return json.Unmarshal(p, sc)
+func (xx *Convert) fromJSON(p []byte) error {
+	*xx = Convert{}
+	return json.Unmarshal(p, xx)
 }
 
-func (sc *Convert) CheckConfig() error {
+func (xx *Convert) CheckConfig() error {
 	return nil
 }
 
-func (sc *Convert) Run(r io.Reader, w io.Writer) error {
+func (xx *Convert) Run(r io.Reader, w io.Writer) error {
 	ww := csv.NewWriter(w)
 
 	var (
-		rows [][]string
+		Rows [][]string
 		err  error
 	)
 	switch {
-	case sc.Fields:
-		rows, err = convertFields(r)
-	case sc.Markdown:
-		rows, err = convertMarkdown(r)
+	case xx.Fields:
+		Rows, err = convertFields(r)
+	case xx.Markdown:
+		Rows, err = convertMarkdown(r)
 	default:
 		panic("no valid conversion type specified")
 	}
@@ -52,7 +52,7 @@ func (sc *Convert) Run(r io.Reader, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	for _, row := range rows {
+	for _, row := range Rows {
 		ww.Write(row)
 	}
 
@@ -62,25 +62,25 @@ func (sc *Convert) Run(r io.Reader, w io.Writer) error {
 
 func convertFields(r io.Reader) ([][]string, error) {
 	scanner := bufio.NewScanner(r)
-	rows := make([][]string, 0)
+	Rows := make([][]string, 0)
 	for scanner.Scan() {
 		line := scanner.Text()
-		rows = append(rows, strings.Fields(line))
+		Rows = append(Rows, strings.Fields(line))
 	}
 	if err := scanner.Err(); err != nil {
-		return rows, err
+		return Rows, err
 	}
-	return rows, nil
+	return Rows, nil
 }
 
 var errNoMarkdownTable = errors.New("could not find Markdown table")
 
 func convertMarkdown(r io.Reader) ([][]string, error) {
-	var rows [][]string = nil // couldn't get empty slices to compare equably in test, so nil
+	var Rows [][]string = nil // couldn't get empty slices to compare equably in test, so nil
 
 	b, err := io.ReadAll(r)
 	if err != nil {
-		return rows, err
+		return Rows, err
 	}
 
 	p := md.Parser{Table: true}
@@ -96,7 +96,7 @@ func convertMarkdown(r io.Reader) ([][]string, error) {
 		}
 	}
 	if !ok {
-		return rows, errNoMarkdownTable
+		return Rows, errNoMarkdownTable
 	}
 
 	var (
@@ -109,7 +109,7 @@ func convertMarkdown(r io.Reader) ([][]string, error) {
 		x.Inline[0].PrintText(buf)
 		row = append(row, buf.String())
 	}
-	rows = append(rows, row)
+	Rows = append(Rows, row)
 
 	for _, x := range tbl.Rows {
 		row = []string{}
@@ -122,8 +122,8 @@ func convertMarkdown(r io.Reader) ([][]string, error) {
 			}
 			row = append(row, s)
 		}
-		rows = append(rows, row)
+		Rows = append(Rows, row)
 	}
 
-	return rows, nil
+	return Rows, nil
 }

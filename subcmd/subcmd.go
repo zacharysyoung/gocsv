@@ -12,13 +12,13 @@ type Runner interface {
 }
 
 // rows wraps a set of records, for printing in test failures.
-type rows [][]string
+type Rows [][]string
 
 // errNoData reports an empty CSV
-var errNoData = errors.New("no data")
+var ErrNoData = errors.New("no data")
 
 // String prints a pretty rectangle from rows.
-func (recs rows) String() string {
+func (recs Rows) String() string {
 	widths := getColWidths(recs)
 
 	var sb strings.Builder

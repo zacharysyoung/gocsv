@@ -21,18 +21,18 @@ func NewTail(n int, fromTop bool) *Tail {
 	}
 }
 
-func (sc *Tail) fromJSON(p []byte) error {
-	*sc = Tail{}
-	return json.Unmarshal(p, sc)
+func (xx *Tail) fromJSON(p []byte) error {
+	*xx = Tail{}
+	return json.Unmarshal(p, xx)
 }
 
-func (sc *Tail) CheckConfig() error {
+func (xx *Tail) CheckConfig() error {
 	return nil
 }
 
-func (sc *Tail) Run(r io.Reader, w io.Writer) error {
-	if sc.N < 1 {
-		panic(fmt.Errorf("N = %d; N must be greater than 0", sc.N))
+func (xx *Tail) Run(r io.Reader, w io.Writer) error {
+	if xx.N < 1 {
+		panic(fmt.Errorf("N = %d; N must be greater than 0", xx.N))
 	}
 
 	rr := csv.NewReader(r)
@@ -50,11 +50,11 @@ func (sc *Tail) Run(r io.Reader, w io.Writer) error {
 	}
 	ww.Write(header)
 
-	switch sc.FromTop {
+	switch xx.FromTop {
 	case true:
-		err = tailFromTop(rr, ww, sc.N)
+		err = tailFromTop(rr, ww, xx.N)
 	case false:
-		err = tailFromBottom(rr, ww, sc.N)
+		err = tailFromBottom(rr, ww, xx.N)
 	}
 	if err != nil {
 		return err

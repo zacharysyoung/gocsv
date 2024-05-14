@@ -1,4 +1,4 @@
-package subcmd
+package rename
 
 import (
 	"encoding/csv"
@@ -7,13 +7,15 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+
+	"github.com/zacharysyoung/gocsv/subcmd"
 )
 
 // Rename changes column names in the header.
 type Rename struct {
 	// ColGroups are the ColGroups that represent the columns to be
 	// renamed.
-	ColGroups []ColGroup
+	ColGroups []subcmd.ColGroup
 
 	// Names is list of replacement names that matches the order and
 	// count of the final indexes in ColGroups.
@@ -25,20 +27,20 @@ type Rename struct {
 	Repl string
 }
 
-func NewRename(groups []ColGroup, names []string, regexp, repl string) *Rename {
+func NewRename(groups []subcmd.ColGroup, names []string, regexp, repl string) *Rename {
 	return &Rename{ColGroups: groups, Names: names, Regexp: regexp, Repl: repl}
 }
 
-func (sc *Rename) fromJSON(p []byte) error {
-	*sc = Rename{}
-	return json.Unmarshal(p, sc)
+func (xx *Rename) fromJSON(p []byte) error {
+	*xx = Rename{}
+	return json.Unmarshal(p, xx)
 }
 
-func (sc *Rename) CheckConfig() error {
+func (xx *Rename) CheckConfig() error {
 	return nil
 }
 
-func (sc *Rename) Run(r io.Reader, w io.Writer) error {
+func (xx *Rename) Run(r io.Reader, w io.Writer) error {
 	rr := csv.NewReader(r)
 	ww := csv.NewWriter(w)
 
@@ -47,27 +49,27 @@ func (sc *Rename) Run(r io.Reader, w io.Writer) error {
 	header, err := rr.Read()
 	if err != nil {
 		if err == io.EOF {
-			return errNoData
+			return subcmd.ErrNoData
 		}
 		return err
 	}
 
-	cols, err := FinalizeCols(sc.ColGroups, header)
+	cols, err := subcmd.FinalizeCols(xx.ColGroups, header)
 	if err != nil {
 		return err
 	}
 
 	switch {
-	case len(sc.Names) > 0:
-		if header, err = rename(header, cols, sc.Names); err != nil {
+	case len(xx.Names) > 0:
+		if header, err = rename(header, cols, xx.Names); err != nil {
 			return err
 		}
-	case sc.Regexp != "":
-		if header, err = replace(header, cols, sc.Regexp, sc.Repl); err != nil {
+	case xx.Regexp != "":
+		if header, err = replace(header, cols, xx.Regexp, xx.Repl); err != nil {
 			return err
 		}
 	default:
-		panic(fmt.Errorf("need non-empty Names: %v or Regexp: %q", sc.Names, sc.Regexp))
+		panic(fmt.Errorf("need non-empty Names: %v or Regexp: %q", xx.Names, xx.Regexp))
 	}
 
 	ww.Write(header)
@@ -94,7 +96,7 @@ func rename(header []string, cols []int, names []string) ([]string, error) {
 	if len(names) != len(cols) {
 		return nil, fmt.Errorf("%w: %d names != %d cols", errWrongCounts, len(names), len(cols))
 	}
-	cols = Base0Cols(cols)
+	cols = subcmd.Base0Cols(cols)
 	for i, x := range cols {
 		header[x] = names[i]
 	}
@@ -111,7 +113,7 @@ func replace(header []string, cols []int, sre, repl string) (hdr []string, err e
 
 	hdr = make([]string, len(header))
 	copy(hdr, header)
-	for _, x := range Base0Cols(cols) {
+	for _, x := range subcmd.Base0Cols(cols) {
 		hdr[x] = re.ReplaceAllString(header[x], repl)
 	}
 	return

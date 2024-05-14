@@ -21,18 +21,18 @@ func NewHead(n int, fromBottom bool) *Head {
 	}
 }
 
-func (sc *Head) fromJSON(p []byte) error {
-	*sc = Head{}
-	return json.Unmarshal(p, sc)
+func (xx *Head) fromJSON(p []byte) error {
+	*xx = Head{}
+	return json.Unmarshal(p, xx)
 }
 
-func (sc *Head) CheckConfig() error {
+func (xx *Head) CheckConfig() error {
 	return nil
 }
 
-func (sc *Head) Run(r io.Reader, w io.Writer) error {
-	if sc.N < 1 {
-		panic(fmt.Errorf("N = %d; N must be greater than 0", sc.N))
+func (xx *Head) Run(r io.Reader, w io.Writer) error {
+	if xx.N < 1 {
+		panic(fmt.Errorf("N = %d; N must be greater than 0", xx.N))
 	}
 
 	rr := csv.NewReader(r)
@@ -50,11 +50,11 @@ func (sc *Head) Run(r io.Reader, w io.Writer) error {
 	}
 	ww.Write(header)
 
-	switch sc.FromBottom {
+	switch xx.FromBottom {
 	case true:
-		err = headFromBottom(rr, ww, sc.N)
+		err = headFromBottom(rr, ww, xx.N)
 	case false:
-		err = headFromTop(rr, ww, sc.N)
+		err = headFromTop(rr, ww, xx.N)
 	}
 	if err != nil {
 		return err

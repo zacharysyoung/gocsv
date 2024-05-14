@@ -19,20 +19,20 @@ func NewClean(trim bool) *Clean {
 	}
 }
 
-func (sc *Clean) fromJSON(p []byte) error {
-	*sc = Clean{}
-	return json.Unmarshal(p, sc)
+func (xx *Clean) fromJSON(p []byte) error {
+	*xx = Clean{}
+	return json.Unmarshal(p, xx)
 }
 
-func (sc *Clean) CheckConfig() error {
+func (xx *Clean) CheckConfig() error {
 	return nil
 }
 
-func (sc *Clean) Run(r io.Reader, w io.Writer) error {
+func (xx *Clean) Run(r io.Reader, w io.Writer) error {
 	rr := csv.NewReader(r)
 	ww := csv.NewWriter(w)
 
-	rr.TrimLeadingSpace = sc.Trim
+	rr.TrimLeadingSpace = xx.Trim
 
 	for {
 		record, err := rr.Read()

@@ -1,84 +1,86 @@
-package subcmd
+package sort
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/zacharysyoung/gocsv/subcmd"
 )
 
 func TestSort(t *testing.T) {
 	type cols []int
 
 	for _, tc := range []struct {
-		rows  rows
+		rows  subcmd.Rows
 		cols  cols
 		order int
-		want  rows
+		want  subcmd.Rows
 	}{
 		{
-			rows: rows{
+			rows: subcmd.Rows{
 				{"2", "c"},
 				{"1", "b"},
 				{"2", "a"},
 			},
 			cols:  cols{1},
 			order: 1,
-			want: rows{
+			want: subcmd.Rows{
 				{"1", "b"},
 				{"2", "c"},
 				{"2", "a"},
 			},
 		},
 		{
-			rows: rows{
+			rows: subcmd.Rows{
 				{"2", "c"},
 				{"1", "b"},
 				{"2", "a"},
 			},
 			cols:  cols{1},
 			order: -1,
-			want: rows{
+			want: subcmd.Rows{
 				{"2", "c"},
 				{"2", "a"},
 				{"1", "b"},
 			},
 		},
 		{
-			rows: rows{
+			rows: subcmd.Rows{
 				{"2", "c"},
 				{"1", "b"},
 				{"2", "a"},
 			},
 			cols:  cols{1, 2},
 			order: 1,
-			want: rows{
+			want: subcmd.Rows{
 				{"1", "b"},
 				{"2", "a"},
 				{"2", "c"},
 			},
 		},
 		{
-			rows: rows{
+			rows: subcmd.Rows{
 				{"2", "b"},
 				{"2", "c"},
 				{"1", "b"},
 			},
 			cols:  cols{2, 1},
 			order: 1,
-			want: rows{
+			want: subcmd.Rows{
 				{"1", "b"},
 				{"2", "b"},
 				{"2", "c"},
 			},
 		},
 		{
-			rows: rows{
+			rows: subcmd.Rows{
 				{"1", "b"},
 				{"2", "b"},
 				{"2", "c"},
 			},
 			cols:  cols{2, 1},
 			order: -1,
-			want: rows{
+			want: subcmd.Rows{
 				{"2", "c"},
 				{"2", "b"},
 				{"1", "b"},
@@ -86,7 +88,7 @@ func TestSort(t *testing.T) {
 		},
 	} {
 		// copy input
-		in := append(rows{}, tc.rows...)
+		in := append(subcmd.Rows{}, tc.rows...)
 		sort(in, tc.cols, tc.order)
 		if !reflect.DeepEqual(in, tc.want) {
 			t.Errorf("sort(\n%s, %v,%d)\ngot\n%s\nwant\n%s", tc.rows, tc.cols, tc.order, in, tc.want)

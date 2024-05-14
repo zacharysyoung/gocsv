@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	sc "github.com/zacharysyoung/gocsv/subcmd"
+	subcmd "github.com/zacharysyoung/gocsv/subcmd"
 )
 
 type Operator string
@@ -60,9 +60,9 @@ func NewFilter(col int, operator Operator, val string) *Filter {
 	}
 }
 
-func (sc *Filter) fromJSON(p []byte) error {
-	*sc = Filter{}
-	return json.Unmarshal(p, sc)
+func (subcmd *Filter) fromJSON(p []byte) error {
+	*subcmd = Filter{}
+	return json.Unmarshal(p, subcmd)
 }
 
 func (xx *Filter) Run(r io.Reader, w io.Writer) error {
@@ -92,7 +92,7 @@ func (xx *Filter) Run(r io.Reader, w io.Writer) error {
 	}
 	ww.Write(header)
 
-	col := sc.Base0Cols([]int{xx.Col})[0]
+	col := subcmd.Base0Cols([]int{xx.Col})[0]
 	var record []string
 	switch xx.Operator {
 	case Re:
@@ -116,17 +116,17 @@ func (xx *Filter) Run(r io.Reader, w io.Writer) error {
 	default:
 		var (
 			val any
-			it  sc.InferredType
+			it  subcmd.InferredType
 		)
 		switch xx.NoInference {
 		case true:
-			it = sc.String
+			it = subcmd.String
 			val = xx.Value
 		case false:
-			val, it = sc.Infer(xx.Value)
+			val, it = subcmd.Infer(xx.Value)
 		}
 
-		if it == sc.String && xx.CaseInsensitive {
+		if it == subcmd.String && xx.CaseInsensitive {
 			val = strings.ToLower(val.(string))
 		}
 
@@ -139,7 +139,7 @@ func (xx *Filter) Run(r io.Reader, w io.Writer) error {
 			}
 			m, err := match(record[col], xx.Operator, val, it, xx.CaseInsensitive, xx.Exclude)
 			if err != nil {
-				_, sit := sc.Infer(record[col])
+				_, sit := subcmd.Infer(record[col])
 				return fmt.Errorf("evaluating row %d cell %d, could not compare %s %q to %s %v", i, col+1, sit, record[col], it, val)
 			}
 			if m {
@@ -161,10 +161,10 @@ func (xx *Filter) Run(r io.Reader, w io.Writer) error {
 //
 // If lower is specified, s will be lower-cased before comparing to
 // an assumed already lower-cased v.
-func match(s string, op Operator, v any, it sc.InferredType, lower, negate bool) (bool, error) {
+func match(s string, op Operator, v any, it subcmd.InferredType, lower, negate bool) (bool, error) {
 	_match := func() (bool, error) {
 		switch it {
-		case sc.String:
+		case subcmd.String:
 			if lower {
 				s = strings.ToLower(s)
 			}
@@ -182,8 +182,8 @@ func match(s string, op Operator, v any, it sc.InferredType, lower, negate bool)
 			case Gte:
 				return s >= v.(string), nil
 			}
-		case sc.Number:
-			x, err := sc.ToNumber(s)
+		case subcmd.Number:
+			x, err := subcmd.ToNumber(s)
 			switch op {
 			case Eq:
 				return x == v.(float64), err
@@ -198,8 +198,8 @@ func match(s string, op Operator, v any, it sc.InferredType, lower, negate bool)
 			case Gte:
 				return x >= v.(float64), err
 			}
-		case sc.Time:
-			a, err := sc.ToTime(s)
+		case subcmd.Time:
+			a, err := subcmd.ToTime(s)
 			b := v.(time.Time)
 			switch op {
 			case Eq:
@@ -215,8 +215,8 @@ func match(s string, op Operator, v any, it sc.InferredType, lower, negate bool)
 			case Gte:
 				return a.After(b) || a.Equal(b), err
 			}
-		case sc.Bool:
-			x, err := sc.ToBool(s)
+		case subcmd.Bool:
+			x, err := subcmd.ToBool(s)
 			switch op {
 			case Eq:
 				return x == v.(bool), err

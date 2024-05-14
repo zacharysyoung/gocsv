@@ -139,7 +139,7 @@ func ToTime(x string) (time.Time, error) {
 	return time.Time{}, errors.New("not a time")
 }
 
-func compare1(a, b any, it InferredType) int {
+func Compare1(a, b any, it InferredType) int {
 	switch it {
 	case Bool:
 		return CompareBools(a.(bool), b.(bool))
@@ -152,7 +152,7 @@ func compare1(a, b any, it InferredType) int {
 	}
 }
 
-func compare2(a, b string, it InferredType) int {
+func Compare2(a, b string, it InferredType) int {
 	switch it {
 	case Bool:
 		x, _ := ToBool(a)

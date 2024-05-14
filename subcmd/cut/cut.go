@@ -21,7 +21,7 @@ func NewCut(groups []subcmd.ColGroup, exclude bool) *Cut {
 	return &Cut{ColGroups: groups, Exclude: exclude}
 }
 
-func (sc *Cut) Run(r io.Reader, w io.Writer) error {
+func (xx *Cut) Run(r io.Reader, w io.Writer) error {
 	rr := csv.NewReader(r)
 	ww := csv.NewWriter(w)
 
@@ -33,12 +33,12 @@ func (sc *Cut) Run(r io.Reader, w io.Writer) error {
 		return err
 	}
 
-	cols, err := subcmd.FinalizeCols(sc.ColGroups, header)
+	cols, err := subcmd.FinalizeCols(xx.ColGroups, header)
 	if err != nil {
 		return err
 	}
 
-	if len(cols) > 0 && sc.Exclude {
+	if len(cols) > 0 && xx.Exclude {
 		cols = exclude(cols, header)
 	}
 	cols = subcmd.Base0Cols(cols)

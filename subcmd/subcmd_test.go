@@ -8,7 +8,7 @@ import (
 )
 
 func TestRowsStringer(t *testing.T) {
-	rows := rows{
+	Rows := Rows{
 		{"Col1", "Col2"},
 		{"foo", "12345"},
 		{"barbaz", "2.0"},
@@ -19,7 +19,7 @@ func TestRowsStringer(t *testing.T) {
   barbaz,   2.0 ]`
 	want = strings.TrimPrefix(want, "\n")
 
-	if got := fmt.Sprint(rows); got != want {
+	if got := fmt.Sprint(Rows); got != want {
 		t.Errorf("\ngot\n%q\nwant\n%q", got, want)
 	}
 }
