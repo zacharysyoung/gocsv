@@ -1,6 +1,8 @@
 package sort
 
 import (
+	"encoding/json"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -94,4 +96,19 @@ func TestSort(t *testing.T) {
 			t.Errorf("sort(\n%s, %v,%d)\ngot\n%s\nwant\n%s", tc.rows, tc.cols, tc.order, in, tc.want)
 		}
 	}
+}
+
+func fromJSON(data []byte) (subcmd.Runner, error) {
+	sort := &Sort{}
+	err := json.Unmarshal(data, sort)
+	return sort, err
+}
+
+func TestTestdata(t *testing.T) {
+	path, err := filepath.Abs("./testdata/sort.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tdr := subcmd.NewTestdataRunner(path, fromJSON, t)
+	tdr.Run()
 }

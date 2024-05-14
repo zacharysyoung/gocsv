@@ -1,4 +1,4 @@
-package subcmd
+package tail
 
 import (
 	"encoding/csv"

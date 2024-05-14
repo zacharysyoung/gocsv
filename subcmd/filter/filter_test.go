@@ -142,9 +142,9 @@ func testSimple(t *testing.T, it subcmd.InferredType, testCases []simpleMatchTes
 }
 
 func fromJSON(data []byte) (subcmd.Runner, error) {
-	cut := &Filter{}
-	err := json.Unmarshal(data, cut)
-	return cut, err
+	filter := &Filter{}
+	err := json.Unmarshal(data, filter)
+	return filter, err
 }
 
 func TestTestdata(t *testing.T) {

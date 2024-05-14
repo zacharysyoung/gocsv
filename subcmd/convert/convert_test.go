@@ -1,10 +1,14 @@
-package subcmd
+package convert
 
 import (
+	"encoding/json"
 	"errors"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/zacharysyoung/gocsv/subcmd"
 )
 
 func TestConvertFields(t *testing.T) {
@@ -75,4 +79,19 @@ func TestConvertMarkdown(t *testing.T) {
 			t.Errorf("convertMarkdown\n got: %q\nwant: %q", got, tc.want)
 		}
 	}
+}
+
+func fromJSON(data []byte) (subcmd.Runner, error) {
+	convert := &Convert{}
+	err := json.Unmarshal(data, convert)
+	return convert, err
+}
+
+func TestTestdata(t *testing.T) {
+	path, err := filepath.Abs("./testdata/convert.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tdr := subcmd.NewTestdataRunner(path, fromJSON, t)
+	tdr.Run()
 }

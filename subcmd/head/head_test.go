@@ -9,9 +9,9 @@ import (
 )
 
 func fromJSON(data []byte) (xx.Runner, error) {
-	cut := &Head{}
-	err := json.Unmarshal(data, cut)
-	return cut, err
+	head := &Head{}
+	err := json.Unmarshal(data, head)
+	return head, err
 }
 
 func TestHeadTestdata(t *testing.T) {

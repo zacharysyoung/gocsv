@@ -1,4 +1,4 @@
-package subcmd
+package clean
 
 import (
 	"encoding/csv"
