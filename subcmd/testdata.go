@@ -14,22 +14,25 @@ import (
 // *subcmd.Runner.
 type UnmarshalFunc func(data []byte) (Runner, error)
 
+// TestdataRunner provides a standard means of testing a [Runner].
 type TestdataRunner struct {
-	path     string // path of a Txtar test file.
-	fromJSON UnmarshalFunc
-	t        *testing.T
+	Path     string // path of a Txtar test file.
+	FromJSON UnmarshalFunc
+	T        *testing.T
 }
 
+// NewTestdataRunner returns a new [TestdataRunner].
 func NewTestdataRunner(path string, f UnmarshalFunc, t *testing.T) TestdataRunner {
 	return TestdataRunner{path, f, t}
 }
 
+// Run runs the tests.
 func (tdr TestdataRunner) Run() {
-	fname := filepath.Base(tdr.path)
+	fname := filepath.Base(tdr.Path)
 	scName := strings.TrimSuffix(fname, ".txt")
 
-	tdr.t.Run(scName, func(t *testing.T) {
-		a, err := txtar.ParseFile(tdr.path)
+	tdr.T.Run(scName, func(t *testing.T) {
+		a, err := txtar.ParseFile(tdr.Path)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -56,7 +59,7 @@ func (tdr TestdataRunner) Run() {
 				if len(data) == 0 {
 					data = []byte("{}")
 				}
-				sc, err := tdr.fromJSON(data)
+				xx, err := tdr.FromJSON(data)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -79,7 +82,7 @@ func (tdr TestdataRunner) Run() {
 					}
 				}()
 
-				err = sc.Run(r, buf)
+				err = xx.Run(r, buf)
 
 				switch {
 				case err != nil:
