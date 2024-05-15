@@ -1,9 +1,13 @@
 package rename
 
 import (
+	"encoding/json"
 	"errors"
+	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/zacharysyoung/gocsv/subcmd"
 )
 
 func TestRename(t *testing.T) {
@@ -59,4 +63,19 @@ func TestReplace(t *testing.T) {
 			t.Errorf("replace(%v, %v, %q, %q) = %v; want %v", tc.header, tc.cols, tc.sre, tc.repl, got, tc.want)
 		}
 	}
+}
+
+func fromJSON(data []byte) (subcmd.Runner, error) {
+	rename := &Rename{}
+	err := json.Unmarshal(data, rename)
+	return rename, err
+}
+
+func TestTestdata(t *testing.T) {
+	path, err := filepath.Abs("./testdata/rename.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tdr := subcmd.NewTestdataRunner(path, fromJSON, t)
+	tdr.Run()
 }

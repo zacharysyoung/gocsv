@@ -11,10 +11,10 @@ type Runner interface {
 	Run(io.Reader, io.Writer) error
 }
 
-// rows wraps a set of records, for printing in test failures.
+// Rows wraps a set of records, for printing in test failures.
 type Rows [][]string
 
-// errNoData reports an empty CSV
+// ErrNoData reports an empty CSV with no header.
 var ErrNoData = errors.New("no data")
 
 // String prints a pretty rectangle from rows.
@@ -54,17 +54,8 @@ func getColWidths(recs [][]string) []int {
 	return widths
 }
 
-// Base1Cols returns friendly 1-based indexes for the columns
-// in header.
-func Base1Cols(header []string) (newCols []int) {
-	newCols = make([]int, len(header))
-	for i := range header {
-		newCols[i] = i + 1
-	}
-	return
-}
-
-// Base0Cols turns friendly 1-based indexes to 0-based indexes.
+// Base0Cols turns the friendly 1-based indexes in cols to
+// 0-based.
 func Base0Cols(cols []int) (newCols []int) {
 	for _, x := range cols {
 		newCols = append(newCols, x-1)
@@ -72,64 +63,66 @@ func Base0Cols(cols []int) (newCols []int) {
 	return
 }
 
-// ColGroup holds a single column index or range of column indexes.
-// All indexes (single or in a range) are presumed to be valid,
-// but the subcmd using a group will determine if the indexes
-// actually fit within the header of the CSV being processed.
-//
-// Indexes are 1-based, and all ranges are inclusive. A group can
-// be a single index, a closed range, or an open range, for
-// example:
-// - [1]: the first column
-// - [1, 4]: columns 1 to 4
-// - [4, 1]: columns 4 to 1
-// - [-1, 4]: the first column to column 4 (columns 1 to 4)
-// - [4, -1]: column 4 to the last column
-type ColGroup []int
+// Base1Cols returns friendly 1-based indexes for all columns
+// in header.
+func Base1Cols(header []string) (newCols []int) {
+	for i := range header {
+		newCols = append(newCols, i+1)
+	}
+	return
+}
 
-var errBadRange = errors.New("bad open-ended range")
+// A Range holds 1-based column indexes in one of two forms:
+//   - a single column index, e.g., [2] for the second column
+//   - an open range with a start index and -1, e.g., [3 -1] for
+//     all columns from the third column on
+type Range []int
 
-// FinalizeCols expands groups into a final, flat list of 1-based
-// indexes, checking header to make sure all specified indexes are
-// in bounds, e.g.,
+// Ranges hold any number of [Range] things and provides the
+// convenience method [Ranges.Finalize].  Empty or nil ranges
+// have no meaning.
+type Ranges []Range
+
+// ErrBadRange represents some kind of problem when a bad [Ranges]
+// object called [Ranges.Finalize].
+var ErrBadRange = errors.New("bad range")
+
+// Finalize expands ranges into a final, flat list of indexes,
+// checking header to make sure all specified indexes are in
+// bounds. It returns [ErrBadRange] with some specifices for any
+// kind of problem.
 //
-// or with (N-length) header,
-//
-//	[[4,6],[8],[-1,3],[9,-1],[7]] → [4,5,6,8,1,2,3,9,N,7]
-func FinalizeCols(groups []ColGroup, header []string) (newCols []int, err error) {
-	if len(groups) == 0 {
-		for i := range header {
-			newCols = append(newCols, i+1) // i+1, 1-based
-		}
+// A subcmd that uses Ranges might benefit by calling this method.
+func (ranges Ranges) Finalize(header []string) (newCols []int, err error) {
+	if len(ranges) == 0 {
+		err = fmt.Errorf("%w: empty or nil ranges", ErrBadRange)
 		return
 	}
 
 	n := len(header) // 1-based
-	for _, x := range groups {
-		var a, b int
+Error:
+	for _, x := range ranges {
+		err = fmt.Errorf("%w: %v must be either single-index [i] or range [i -1], , with i>=1 and i<=len(header)=%d", ErrBadRange, x, n)
+
+		a, b := 0, 0
 		switch len(x) {
+		default:
+			break Error
 		case 1:
-			a, b = x[0], x[0]
+			a = x[0]
+			if a < 1 || a > n {
+				break Error
+			}
+			b = x[0]
 		case 2:
 			a, b = x[0], x[1]
-			if a == -1 {
-				a = 1
+			if a < 1 || a > n || b != -1 {
+				break Error
 			}
-			if b == -1 {
-				b = n
-			}
-		default:
-			panic(fmt.Errorf("%w: %v", errBadRange, x))
+			b = n
 		}
+		err = nil
 
-		if a < 1 || b < a {
-			panic(fmt.Errorf("group %v fails constraint 1 <= %d < %d", x, a, b))
-		}
-
-		if b > n {
-			err = fmt.Errorf("%w: %d-%d with %d column(s)", errBadRange, a, b, n)
-			return
-		}
 		for i := a; i <= b; i++ {
 			newCols = append(newCols, i)
 		}

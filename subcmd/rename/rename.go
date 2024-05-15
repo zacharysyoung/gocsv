@@ -2,7 +2,6 @@ package rename
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,12 +12,11 @@ import (
 
 // Rename changes column names in the header.
 type Rename struct {
-	// ColGroups are the ColGroups that represent the columns to be
-	// renamed.
-	ColGroups []subcmd.ColGroup
+	// Ranges are the Ranges of columns to be renamed.
+	Ranges subcmd.Ranges
 
 	// Names is list of replacement names that matches the order and
-	// count of the final indexes in ColGroups.
+	// count of the finalized indexes in Ranges.
 	Names []string
 
 	// Regexp is a regexp to match certain column names in ColGroups.
@@ -27,61 +25,64 @@ type Rename struct {
 	Repl string
 }
 
-func NewRename(groups []subcmd.ColGroup, names []string, regexp, repl string) *Rename {
-	return &Rename{ColGroups: groups, Names: names, Regexp: regexp, Repl: repl}
-}
-
-func (xx *Rename) fromJSON(p []byte) error {
-	*xx = Rename{}
-	return json.Unmarshal(p, xx)
-}
-
-func (xx *Rename) CheckConfig() error {
-	return nil
+func NewRename(ranges []subcmd.Range, names []string, regexp, repl string) *Rename {
+	return &Rename{Ranges: ranges, Names: names, Regexp: regexp, Repl: repl}
 }
 
 func (xx *Rename) Run(r io.Reader, w io.Writer) error {
 	rr := csv.NewReader(r)
 	ww := csv.NewWriter(w)
 
-	var err error
+	var (
+		err error
 
-	header, err := rr.Read()
-	if err != nil {
+		header, row []string
+		cols        []int
+	)
+
+	if header, err = rr.Read(); err != nil {
 		if err == io.EOF {
 			return subcmd.ErrNoData
 		}
 		return err
 	}
 
-	cols, err := subcmd.FinalizeCols(xx.ColGroups, header)
-	if err != nil {
-		return err
+	switch len(xx.Ranges) {
+	case 0:
+		cols = subcmd.Base1Cols(header)
+	default:
+		if cols, err = xx.Ranges.Finalize(header); err != nil {
+			return err
+		}
 	}
 
+	names, regexp := len(xx.Names) > 0, xx.Regexp != ""
+	fmt.Println(xx.Names, names, xx.Regexp, regexp)
 	switch {
-	case len(xx.Names) > 0:
+	case names && regexp:
+		return fmt.Errorf("got both Names: %v and Regexp: %q; cannot use both", xx.Names, xx.Regexp)
+	case !names && !regexp:
+		return fmt.Errorf("got neither Names nor Regexp; must use one")
+
+	case names:
 		if header, err = rename(header, cols, xx.Names); err != nil {
 			return err
 		}
-	case xx.Regexp != "":
+	case regexp:
 		if header, err = replace(header, cols, xx.Regexp, xx.Repl); err != nil {
 			return err
 		}
-	default:
-		panic(fmt.Errorf("need non-empty Names: %v or Regexp: %q", xx.Names, xx.Regexp))
 	}
 
 	ww.Write(header)
 	for {
-		record, err := rr.Read()
-		if err != nil {
+		if row, err = rr.Read(); err != nil {
 			if err == io.EOF {
 				break
 			}
 			return err
 		}
-		ww.Write(record)
+		ww.Write(row)
 	}
 	ww.Flush()
 

@@ -6,17 +6,17 @@
 α,β,γ,δ
 1,2,3,4
 -- cols --
-{"ColGroups":[[2], [3]]}
+{"Ranges":[[2], [3]]}
 -- want --
 β,γ
 2,3
 -- rearranged --
-{"ColGroups":[[3], [2]]}
+{"Ranges":[[3], [2]]}
 -- want --
 γ,β
 3,2
 -- range --
-{"ColGroups":[[2, 4]]}
+{"Ranges":[[2], [3], [4]]}
 -- want --
 β,γ,δ
 2,3,4
@@ -24,12 +24,12 @@
 α,β,γ,δ
 1,2,3,4
 -- exclude singles --
-{"ColGroups":[[2], [3]], "Exclude":true}
+{"Ranges":[[2], [3]], "Exclude":true}
 -- want --
 α,δ
 1,4
 -- exclude range --
-{"ColGroups":[[2, 3]], "Exclude":true}
+{"Ranges":[[2], [3]], "Exclude":true}
 -- want --
 α,δ
 1,4

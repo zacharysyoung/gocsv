@@ -1,4 +1,4 @@
-// Package cut implements a Runner that selects or omits specified
+// Package cut implements a [subcmd.Runner] that selects or omits specified
 // columns.
 package cut
 
@@ -12,47 +12,56 @@ import (
 // Cut reads the input CSV record-by-record and writes only specific
 // fields of each record to the output CSV.
 type Cut struct {
-	ColGroups []subcmd.ColGroup // 1-based indices of the columns to include, or exclude
-
+	Ranges  subcmd.Ranges
 	Exclude bool
 }
 
-func NewCut(groups []subcmd.ColGroup, exclude bool) *Cut {
-	return &Cut{ColGroups: groups, Exclude: exclude}
+func NewCut(ranges []subcmd.Range, exclude bool) *Cut {
+	return &Cut{Ranges: ranges, Exclude: exclude}
 }
 
 func (xx *Cut) Run(r io.Reader, w io.Writer) error {
 	rr := csv.NewReader(r)
 	ww := csv.NewWriter(w)
 
-	header, err := rr.Read()
-	if err != nil {
+	var (
+		err error
+
+		header, row []string
+		cols        []int
+
+		write func([]string) // handy, closes over ww and final cols
+	)
+
+	if header, err = rr.Read(); err != nil {
 		if err == io.EOF {
-			return nil
+			return subcmd.ErrNoData
 		}
 		return err
 	}
 
-	cols, err := subcmd.FinalizeCols(xx.ColGroups, header)
-	if err != nil {
-		return err
+	switch len(xx.Ranges) {
+	case 0:
+		cols = subcmd.Base1Cols(header)
+	default:
+		if cols, err = xx.Ranges.Finalize(header); err != nil {
+			return err
+		}
 	}
-
-	if len(cols) > 0 && xx.Exclude {
+	if xx.Exclude {
 		cols = exclude(cols, header)
 	}
-	cols = subcmd.Base0Cols(cols)
+	row = make([]string, len(cols))
 
-	row := make([]string, len(cols))
-	write := func(rec []string) {
-		row = row[:]
+	cols = subcmd.Base0Cols(cols)
+	write = func(rec []string) {
 		for i, x := range cols {
 			row[i] = rec[x]
 		}
 		ww.Write(row)
 	}
-	write(header)
 
+	write(header)
 	for {
 		rec, err := rr.Read()
 		if err != nil {

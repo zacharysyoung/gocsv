@@ -1,0 +1,13 @@
+-- in --
+A,B,C,D
+-- all columns --
+{"Regexp": ".", "Repl": "a"}
+-- want --
+a,a,a,a
+-- both set --
+{"Names": ["a","b","c","d"], "Regexp": "."}
+-- err --
+got both Names: [a b c d] and Regexp: "."; cannot use both
+-- neither set --
+-- err --
+got neither Names nor Regexp; must use one

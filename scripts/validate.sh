@@ -1,7 +1,14 @@
 #!/bin/sh
-# Run go vet and go test for all code.
+# Validate the tgt directory and all its descendants.
 set -e
 
+tgt="$1"
+[ -z "$tgt" ] && tgt='.'
+cd "$tgt"
+
 echo '-- validating --'
-go vet  ./... && echo 'vet ok' || exit 1
-go test ./...
+gofmt      -w  .     && echo 'fmt ok'     || exit 1
+goimports  -w  .     && echo 'imports ok' || exit 1
+go vet         ./... && echo 'vet ok'     || exit 1
+go test        ./...
+

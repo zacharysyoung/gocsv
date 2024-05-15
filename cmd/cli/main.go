@@ -11,7 +11,14 @@ import (
 	"strings"
 
 	"github.com/zacharysyoung/gocsv/subcmd"
+	"github.com/zacharysyoung/gocsv/subcmd/clean"
+	"github.com/zacharysyoung/gocsv/subcmd/convert"
 	"github.com/zacharysyoung/gocsv/subcmd/cut"
+	"github.com/zacharysyoung/gocsv/subcmd/filter"
+	"github.com/zacharysyoung/gocsv/subcmd/head"
+	"github.com/zacharysyoung/gocsv/subcmd/rename"
+	"github.com/zacharysyoung/gocsv/subcmd/sort"
+	"github.com/zacharysyoung/gocsv/subcmd/tail"
 )
 
 const usage = `Usage: csv [-v | -h] <command> <args>
@@ -102,7 +109,7 @@ func newClean(args ...string) (subcmd.Runner, []string, error) {
 
 	fs.Parse(args)
 
-	sc := subcmd.NewClean(*trimFlag)
+	sc := clean.NewClean(*trimFlag)
 	return sc, fs.Args(), nil
 }
 
@@ -129,7 +136,7 @@ func newConvert(args ...string) (subcmd.Runner, []string, error) {
 		return nil, nil, errors.New("conv: must specify either -fields or -md")
 	}
 
-	sc := subcmd.NewConvert(*fieldsFlag, *markdownFlag)
+	sc := convert.NewConvert(*fieldsFlag, *markdownFlag)
 	return sc, fs.Args(), nil
 }
 
@@ -199,13 +206,13 @@ func newFilter(args ...string) (subcmd.Runner, []string, error) {
 	fs.Parse(args)
 
 	var (
-		ops []subcmd.Operator
+		ops []filter.Operator
 		val string
 	)
 	fs.Visit(func(f *flag.Flag) {
 		switch f.Name {
 		case "ne", "eq", "gt", "gte", "lt", "lte", "re":
-			ops = append(ops, subcmd.Operator(f.Name))
+			ops = append(ops, filter.Operator(f.Name))
 			val = f.Value.String()
 		}
 	})
@@ -216,7 +223,7 @@ func newFilter(args ...string) (subcmd.Runner, []string, error) {
 		return nil, nil, errors.New("filter: -col must be a positive integer")
 	}
 
-	sc := subcmd.NewFilter(*colFlag, ops[0], val)
+	sc := filter.NewFilter(*colFlag, ops[0], val)
 	sc.CaseInsensitive = *iFlag
 	sc.Exclude = *exFlag
 	sc.NoInference = *noInfFlag
@@ -254,7 +261,7 @@ func newHead(args ...string) (subcmd.Runner, []string, error) {
 		os.Exit(2)
 	}
 	fs.Parse(args)
-	return subcmd.NewHead(n, fromBottom), fs.Args(), nil
+	return head.NewHead(n, fromBottom), fs.Args(), nil
 }
 
 func newRename(args ...string) (subcmd.Runner, []string, error) {
@@ -280,7 +287,7 @@ func newRename(args ...string) (subcmd.Runner, []string, error) {
 	if len(names) == 1 && names[0] == "" {
 		names = names[:0]
 	}
-	return subcmd.NewRename(groups, names, *regexpflag, *replflag), fs.Args(), nil
+	return rename.NewRename(groups, names, *regexpflag, *replflag), fs.Args(), nil
 }
 
 func newSort(args ...string) (subcmd.Runner, []string, error) {
@@ -294,7 +301,7 @@ func newSort(args ...string) (subcmd.Runner, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return subcmd.NewSort(cols, *revflag, false), fs.Args(), nil
+	return sort.NewSort(cols, *revflag, false), fs.Args(), nil
 }
 
 func newTail(args ...string) (subcmd.Runner, []string, error) {
@@ -328,7 +335,7 @@ func newTail(args ...string) (subcmd.Runner, []string, error) {
 	}
 	fs.Parse(args)
 
-	return subcmd.NewTail(n, fromBottom), fs.Args(), nil
+	return tail.NewTail(n, fromBottom), fs.Args(), nil
 }
 
 func newView(args ...string) (subcmd.Runner, []string, error) {
@@ -404,7 +411,7 @@ func newView(args ...string) (subcmd.Runner, []string, error) {
 //
 // Once the calling subcmd has the header it will send the groups
 // to [subcmd.FinalizeCols] to finalize the indexes.
-func parseCols(s string) ([]subcmd.ColGroup, error) {
+func parseCols(s string) (subcmd.Ranges, error) {
 	if s == "" {
 		return nil, nil
 	}
@@ -414,7 +421,7 @@ func parseCols(s string) ([]subcmd.ColGroup, error) {
 
 	ss := strings.Split(s, ",")
 
-	groups := make([]subcmd.ColGroup, 0)
+	ranges := make(subcmd.Ranges, 0)
 	for _, x := range ss {
 		switch strings.Contains(x, "-") {
 		case false:
@@ -422,21 +429,51 @@ func parseCols(s string) ([]subcmd.ColGroup, error) {
 			if err != nil {
 				return nil, err
 			}
-			groups = append(groups, subcmd.ColGroup{a})
+			ranges = append(ranges, subcmd.Range{a})
 			continue
 		case true:
-			group, err := splitRange(x)
+			r, err := splitRange(x)
 			if err != nil {
 				return nil, err
 			}
-			groups = append(groups, group)
+			switch len(r) {
+			case 1:
+				ranges = append(ranges, subcmd.Range{r[0]})
+			case 2:
+				a, b := r[0], r[1]
+				if a == 0 || b == 0 {
+					return nil, fmt.Errorf("range %x must be positive integers, or open-ended", x)
+				}
+				switch {
+				case b == -1:
+					ranges = append(ranges, subcmd.Range{a, b})
+				default:
+					if a == -1 {
+						a = 1
+					}
+					switch {
+					case b < a:
+						for i := a; i >= b; i-- {
+							ranges = append(ranges, subcmd.Range{i})
+						}
+					default:
+						for i := a; i <= b; i++ {
+							ranges = append(ranges, subcmd.Range{i})
+						}
+					}
+				}
+			default:
+				panic(fmt.Errorf("splitRange(%v) = %v; only expected a one-int or two-int range", x, r))
+			}
 		}
 	}
-	return groups, nil
+	return ranges, nil
 }
 
-// splitRange parses a range string into a ColGroup.
-func splitRange(s string) (group subcmd.ColGroup, err error) {
+type _range []int
+
+// splitRange parses a range string into a Ranges thing.
+func splitRange(s string) (r _range, err error) {
 	const dash = "-"
 
 	a, b := -1, -1
@@ -445,7 +482,7 @@ func splitRange(s string) (group subcmd.ColGroup, err error) {
 		if a, err = strconv.Atoi(s); err != nil {
 			return
 		}
-		group = subcmd.ColGroup{a}
+		r = _range{a}
 	case 1:
 		ss := strings.Split(s, dash)
 		if ss[0] != "" {
@@ -458,7 +495,7 @@ func splitRange(s string) (group subcmd.ColGroup, err error) {
 				return
 			}
 		}
-		group = subcmd.ColGroup{a, b}
+		r = _range{a, b}
 	default:
 		err = errors.New("wrong number of dashes")
 	}
