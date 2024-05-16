@@ -13,76 +13,76 @@ func TestSort(t *testing.T) {
 	type cols []int
 
 	for _, tc := range []struct {
-		rows  subcmd.Rows
+		rows  [][]string
 		cols  cols
 		order int
-		want  subcmd.Rows
+		want  [][]string
 	}{
 		{
-			rows: subcmd.Rows{
+			rows: [][]string{
 				{"2", "c"},
 				{"1", "b"},
 				{"2", "a"},
 			},
 			cols:  cols{1},
 			order: 1,
-			want: subcmd.Rows{
+			want: [][]string{
 				{"1", "b"},
 				{"2", "c"},
 				{"2", "a"},
 			},
 		},
 		{
-			rows: subcmd.Rows{
+			rows: [][]string{
 				{"2", "c"},
 				{"1", "b"},
 				{"2", "a"},
 			},
 			cols:  cols{1},
 			order: -1,
-			want: subcmd.Rows{
+			want: [][]string{
 				{"2", "c"},
 				{"2", "a"},
 				{"1", "b"},
 			},
 		},
 		{
-			rows: subcmd.Rows{
+			rows: [][]string{
 				{"2", "c"},
 				{"1", "b"},
 				{"2", "a"},
 			},
 			cols:  cols{1, 2},
 			order: 1,
-			want: subcmd.Rows{
+			want: [][]string{
 				{"1", "b"},
 				{"2", "a"},
 				{"2", "c"},
 			},
 		},
 		{
-			rows: subcmd.Rows{
+			rows: [][]string{
 				{"2", "b"},
 				{"2", "c"},
 				{"1", "b"},
 			},
 			cols:  cols{2, 1},
 			order: 1,
-			want: subcmd.Rows{
+			want: [][]string{
 				{"1", "b"},
 				{"2", "b"},
 				{"2", "c"},
 			},
 		},
 		{
-			rows: subcmd.Rows{
+			rows: [][]string{
 				{"1", "b"},
 				{"2", "b"},
 				{"2", "c"},
 			},
 			cols:  cols{2, 1},
 			order: -1,
-			want: subcmd.Rows{
+			want: [][]string{
 				{"2", "c"},
 				{"2", "b"},
 				{"1", "b"},
@@ -90,7 +90,7 @@ func TestSort(t *testing.T) {
 		},
 	} {
 		// copy input
-		in := append(subcmd.Rows{}, tc.rows...)
+		in := append([][]string{}, tc.rows...)
 		sort(in, tc.cols, tc.order)
 		if !reflect.DeepEqual(in, tc.want) {
 			t.Errorf("sort(\n%s, %v,%d)\ngot\n%s\nwant\n%s", tc.rows, tc.cols, tc.order, in, tc.want)

@@ -42,50 +42,18 @@ func TestInfer(t *testing.T) {
 	}
 }
 
-// func TestInferType(t *testing.T) {
-// 	testCases := []struct {
-// 		s    string
-// 		want InferredType
-// 	}{
-// 		{"-1.0", Number},
-// 		{"-1", Number},
-// 		{"0", Number},
-// 		{"0.0", Number},
-// 		{"1", Number},
-// 		{"1.0", Number},
-// 		{"True", Bool},
-// 		{"true", Bool},
-// 		{"TrUe", Bool},
-// 		{"T", Bool},
-// 		{"false", Bool},
-// 		{"False", Bool},
-// 		{"falSE", Bool},
-// 		{"F", Bool},
-// 		{"2000-1-1", Time},
-// 		{"2000-01-01", Time},
-// 		{"1/1/2000", Time},
-// 		{"01/01/2000", Time},
-// 	}
-
-// 	for _, tc := range testCases {
-// 		if got := InferType(tc.s); got != tc.want {
-// 			t.Errorf("inferType(%q) = %v != %v", tc.s, got, tc.want)
-// 		}
-// 	}
-// }
-
 func TestInferCols(t *testing.T) {
 	type cols []int
 	type types []InferredType
 	testCases := []struct {
 		name string
-		Rows Rows
+		rows [][]string
 		cols cols
 		want types
 	}{
 		{
 			name: "single uniform number",
-			Rows: Rows{
+			rows: [][]string{
 				{"1"},
 				{"1.0"},
 				{"-0"},
@@ -95,7 +63,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "single uniform bool",
-			Rows: Rows{
+			rows: [][]string{
 				{"true"},
 				{"false"},
 				{"f"},
@@ -105,7 +73,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "single uniform string",
-			Rows: Rows{
+			rows: [][]string{
 				{"a"},
 				{"b"},
 				{"🤓"},
@@ -115,7 +83,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "single mixed string",
-			Rows: Rows{
+			rows: [][]string{
 				{"1"},
 				{"a"},
 				{"1"},
@@ -125,7 +93,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "multi mixed string",
-			Rows: Rows{
+			rows: [][]string{
 				{"1", "true"},
 				{"a", "false"},
 				{"1", "0"},
@@ -137,7 +105,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "specific columns",
-			Rows: Rows{
+			rows: [][]string{
 				{"1", "true", "1/10/2000"},
 				{"2", "false", "1/11/2000"},
 				{"3", "true", "1/12/2000"},
@@ -149,7 +117,7 @@ func TestInferCols(t *testing.T) {
 		},
 		{
 			name: "datetime mixed layouts",
-			Rows: Rows{
+			rows: [][]string{
 				{"1/10/2000"},
 				{"2000-1-1"},
 				{"2000-01-01"},
@@ -164,8 +132,8 @@ func TestInferCols(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := InferCols(tc.Rows, tc.cols); !reflect.DeepEqual(types(got), tc.want) {
-				t.Errorf("\ninferCols(..., %v) for\n%s\ngot:  %v\nwant: %v", tc.cols, Rows(tc.Rows), got, tc.want)
+			if got := InferCols(tc.rows, tc.cols); !reflect.DeepEqual(types(got), tc.want) {
+				t.Errorf("\ninferCols(..., %v) for\n%s\ngot:  %v\nwant: %v", tc.cols, tc.rows, got, tc.want)
 			}
 		})
 	}

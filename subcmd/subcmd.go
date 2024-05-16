@@ -1,58 +1,23 @@
+// Package subcmd defines an interface and helper types and
+// methods for a subcommand ("subcmd") intended to read and/or
+// write some form of tabular data, and usually CSV.
 package subcmd
 
 import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 )
 
+// Runner is an interface for manipulating streams of data,
+// primarily tabular, and primarily CSV at that.
 type Runner interface {
 	Run(io.Reader, io.Writer) error
 }
 
-// Rows wraps a set of records, for printing in test failures.
-type Rows [][]string
-
-// ErrNoData reports an empty CSV with no header.
-var ErrNoData = errors.New("no data")
-
-// String prints a pretty rectangle from rows.
-func (recs Rows) String() string {
-	widths := getColWidths(recs)
-
-	var sb strings.Builder
-	sb.WriteString("[ ")
-	pre := ""
-	nl := ""
-	for i := range recs {
-		sb.WriteString(nl)
-		sb.WriteString(pre)
-		sep := ""
-		for j := range recs[i] {
-			sb.WriteString(fmt.Sprintf("%s%*s", sep, widths[j], recs[i][j]))
-			sep = ", "
-		}
-		pre = "  "
-		nl = "\n"
-	}
-	sb.WriteString(" ]")
-	return sb.String()
-}
-
-// getColWidths returns a slice of the widths of the widest
-// cell in each column of recs.
-func getColWidths(recs [][]string) []int {
-	widths := make([]int, len(recs[0]))
-	for i := range recs {
-		for j := range recs[i] {
-			if n := len([]rune(recs[i][j])); n > widths[j] {
-				widths[j] = n
-			}
-		}
-	}
-	return widths
-}
+// ErrNoHeader is the error returned by a Runner if its CSV reader
+// doesn't find a header.
+var ErrNoHeader = errors.New("no data")
 
 // Base0Cols turns the friendly 1-based indexes in cols to
 // 0-based.

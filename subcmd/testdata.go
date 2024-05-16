@@ -10,29 +10,79 @@ import (
 	"golang.org/x/tools/txtar"
 )
 
-// UnmarshalFunc unmarshals the byte slice as JSON into a
-// *subcmd.Runner.
-type UnmarshalFunc func(data []byte) (Runner, error)
+// UnmarshalFunc unmarshals jsonData into the target [Runner]
+// for a [TestdataRunner] to run.
+type UnmarshalFunc func(jsonData []byte) (Runner, error)
 
 // TestdataRunner provides a standard means of testing a [Runner].
+// It reads the [golang.org/x/tools/txtar] file at TxtarPath and
+// iterates the test files in the archive, calling the Runner-supplied
+// FromJSON for each test case to create a [Runner] and call its
+// Run method with input and want files.
+//
+// TxtarPath refers to a [golang.org/x/tools/txtar] file archive
+// that follows this format:
+//   - An optional comment, according to the txtar spec.
+//   - The first file is named "-- in --" and contains the input
+//     text that Runner reads from its io.Reader.
+//   - The second file must be named something (not the empty
+//     string). If the file's text is not empty it will be
+//     interpreted as JSON and used to deserialize the test Runner
+//     with an [UnmarshalFunc].  The name of the file becomes the name
+//     of the test case.
+//   - The third file can be named either "-- want --" or "-- error --".
+//     A want-file contains text that must match what Runner writes to its io.Writer.
+//     An error-file contains text that must match the string of the expected error returned by the Run method.
+//   - Any number of pairs of JSON-file and want/error-file can refer to a previous, single, in-file.
+//
+// For example, the following txtar file contains a comment, and four test cases.
+// The lower and upper test cases both refer to the first in-file.
+// The reverse test case refers to its own in-file.
+// The int test case expects an error.
+//
+//	stringfuncs doesn't have any _test.go unit tests.
+//	All tests happen here.
+//	-- in --
+//	Foo
+//	-- lower --
+//	{"Func": "lower"}
+//	-- want --
+//	foo
+//	-- upper --
+//	{"Func": "upper"}
+//	-- want --
+//	FOO
+//	-- in --
+//	Foo🤓
+//	-- reverse --
+//	{"Func": "reverse"}
+//	-- want --
+//	🤓ooF
+//	-- in --
+//	1.0
+//	-- int --
+//	{"Func": "toInt"}
+//	-- error --
+//	parsing "1.0": invalid syntax
 type TestdataRunner struct {
-	Path     string // path of a Txtar test file.
-	FromJSON UnmarshalFunc
-	T        *testing.T
+	TxtarPath string
+	FromJSON  UnmarshalFunc
+
+	t *testing.T
 }
 
 // NewTestdataRunner returns a new [TestdataRunner].
-func NewTestdataRunner(path string, f UnmarshalFunc, t *testing.T) TestdataRunner {
-	return TestdataRunner{path, f, t}
+func NewTestdataRunner(path string, fromJSON UnmarshalFunc, t *testing.T) TestdataRunner {
+	return TestdataRunner{path, fromJSON, t}
 }
 
 // Run runs the tests.
 func (tdr TestdataRunner) Run() {
-	fname := filepath.Base(tdr.Path)
+	fname := filepath.Base(tdr.TxtarPath)
 	scName := strings.TrimSuffix(fname, ".txt")
 
-	tdr.T.Run(scName, func(t *testing.T) {
-		a, err := txtar.ParseFile(tdr.Path)
+	tdr.t.Run(scName, func(t *testing.T) {
+		a, err := txtar.ParseFile(tdr.TxtarPath)
 		if err != nil {
 			t.Fatal(err)
 		}

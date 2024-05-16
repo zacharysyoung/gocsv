@@ -35,7 +35,7 @@ func (xx *Cut) Run(r io.Reader, w io.Writer) error {
 
 	if header, err = rr.Read(); err != nil {
 		if err == io.EOF {
-			return subcmd.ErrNoData
+			return subcmd.ErrNoHeader
 		}
 		return err
 	}
