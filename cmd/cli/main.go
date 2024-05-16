@@ -265,13 +265,14 @@ func newHead(args ...string) (subcmd.Runner, []string, error) {
 }
 
 func newRename(args ...string) (subcmd.Runner, []string, error) {
-	const usage = "[-h] [-cols] [-names | -regexp [-repl]] [file]"
+	const usage = "[-h] [-cols] [-names | -regexp [-repl] | -keys] [file]"
 	var (
 		fs         = flag.NewFlagSet("select", flag.ExitOnError)
 		colsflag   = fs.String("cols", "", "a range of columns to select, e.g., 1,3-5,2")
 		namesflag  = fs.String("names", "", "list of new names, matches the count and order of represented columns in -cols")
 		regexpflag = fs.String("regexp", "", "regexp to match names in -cols")
 		replflag   = fs.String("repl", "", "replacement string; can only be used with -regexp")
+		keysflag   = fs.Bool("keys", false, "sanitizes all names to be valid keys ({{.Name}}) in an html/template")
 	)
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of filter: %s\n", usage)
@@ -287,7 +288,7 @@ func newRename(args ...string) (subcmd.Runner, []string, error) {
 	if len(names) == 1 && names[0] == "" {
 		names = names[:0]
 	}
-	return rename.NewRename(groups, names, *regexpflag, *replflag), fs.Args(), nil
+	return rename.NewRename(groups, names, *regexpflag, *replflag, *keysflag), fs.Args(), nil
 }
 
 func newSort(args ...string) (subcmd.Runner, []string, error) {

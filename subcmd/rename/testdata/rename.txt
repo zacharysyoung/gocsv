@@ -1,13 +1,16 @@
 -- in --
 A,B,C,D
--- all columns --
+-- all columns regexp --
 {"Regexp": ".", "Repl": "a"}
 -- want --
 a,a,a,a
--- both set --
-{"Names": ["a","b","c","d"], "Regexp": "."}
--- err --
-got both Names: [a b c d] and Regexp: "."; cannot use both
--- neither set --
--- err --
-got neither Names nor Regexp; must use one
+-- all columns names --
+{"Names": ["a","a","a","a"]}
+-- want --
+a,a,a,a
+-- in --
+[foo],bar baz,123
+-- make keys --
+{"MakeKeys":true}
+-- want --
+Foo,Bar_baz,_123

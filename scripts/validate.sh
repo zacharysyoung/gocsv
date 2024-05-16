@@ -12,6 +12,7 @@ grep -nr 'fmt\.Print' ./subcmd            && exit 1 # catch debug-Print* stateme
 
 gofmt      -w  .     && echo 'fmt ok'     || exit 1
 goimports  -w  .     && echo 'imports ok' || exit 1
+go mod tidy          && echo 'mod ok'     || exit 1
 go vet         ./... && echo 'vet ok'     || exit 1
 go test        ./...
 

@@ -7,4 +7,4 @@ require (
 	golang.org/x/tools v0.19.0
 )
 
-require golang.org/x/text v0.3.7 // indirect
+require golang.org/x/text v0.15.0

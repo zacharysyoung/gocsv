@@ -10,17 +10,22 @@ import (
 	"github.com/zacharysyoung/gocsv/subcmd"
 )
 
+type (
+	hdr  []string
+	cols []int
+)
+
 func TestRename(t *testing.T) {
 	header := []string{"A", "B", "C", "D"}
 	testCases := []struct {
-		cols        []int
+		cols        cols
 		names, want []string
 		err         error
 	}{
-		{[]int{1}, []string{"a"}, []string{"a", "B", "C", "D"}, nil},
-		{[]int{1, 4}, []string{"a", "d"}, []string{"a", "B", "C", "d"}, nil},
+		{cols{1}, []string{"a"}, []string{"a", "B", "C", "D"}, nil},
+		{cols{1, 4}, []string{"a", "d"}, []string{"a", "B", "C", "d"}, nil},
 
-		{[]int{1, 2}, []string{"a"}, nil, errWrongCounts},
+		{cols{1, 2}, []string{"a"}, nil, errWrongCounts},
 	}
 
 	for _, tc := range testCases {
@@ -35,10 +40,6 @@ func TestRename(t *testing.T) {
 }
 
 func TestReplace(t *testing.T) {
-	type (
-		hdr  []string
-		cols []int
-	)
 	testCases := []struct {
 		header    hdr
 		cols      cols
@@ -61,6 +62,24 @@ func TestReplace(t *testing.T) {
 		}
 		if !reflect.DeepEqual(hdr(got), tc.want) {
 			t.Errorf("replace(%v, %v, %q, %q) = %v; want %v", tc.header, tc.cols, tc.sre, tc.repl, got, tc.want)
+		}
+	}
+}
+
+func TestSanitizeIdentifier(t *testing.T) {
+	testCases := []struct {
+		name string
+		want string
+	}{
+		{"foo", "Foo"},
+		{"foo bar", "Foo_bar"},
+		{"[foo]", "Foo"},
+		{"FOo", "FOo"},
+		{"123", "_123"},
+	}
+	for _, tc := range testCases {
+		if got := sanitizeIdentifier(tc.name); got != tc.want {
+			t.Errorf("sanitizeIdentifier(%q) = %v; want %v", tc.name, got, tc.want)
 		}
 	}
 }
