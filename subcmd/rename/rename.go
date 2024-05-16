@@ -57,7 +57,6 @@ func (xx *Rename) Run(r io.Reader, w io.Writer) error {
 	}
 
 	names, regexp := len(xx.Names) > 0, xx.Regexp != ""
-	fmt.Println(xx.Names, names, xx.Regexp, regexp)
 	switch {
 	case names && regexp:
 		return fmt.Errorf("got both Names: %v and Regexp: %q; cannot use both", xx.Names, xx.Regexp)
