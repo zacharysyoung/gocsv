@@ -1,13 +1,15 @@
 package subcmd
 
 import (
+	"os"
 	"reflect"
 	"testing"
 	"time"
 )
 
+var jan1 = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+
 func TestInfer(t *testing.T) {
-	jan1 := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 	testCases := []struct {
 		s string
 		t InferredType
@@ -39,6 +41,26 @@ func TestInfer(t *testing.T) {
 		if tt != tc.t || v != tc.v {
 			t.Errorf("Infer(%s) = %v, %s; want %v, %s", tc.s, v, tt, tc.v, tc.t)
 		}
+	}
+}
+
+func TestCustomLayout(t *testing.T) {
+	var (
+		newLayout = "Jan. 2, 2006"
+		sTime     = "Jan. 1, 2000"
+	)
+
+	v, it := Infer(sTime)
+	if it != String || v != sTime {
+		t.Errorf("before adding %s=%q, Infer(%q) = %q, %s; want %q, %s", CSV_LAYOUTS, newLayout, sTime, v, it, sTime, String)
+	}
+
+	os.Setenv(CSV_LAYOUTS, newLayout)
+	loadNewLayouts()
+
+	v, it = Infer(sTime)
+	if it != Time || v != jan1 {
+		t.Errorf("after adding %s=%q, Infer(%q) = %q, %s; want %q, %s", CSV_LAYOUTS, newLayout, sTime, v, it, jan1, Time)
 	}
 }
 

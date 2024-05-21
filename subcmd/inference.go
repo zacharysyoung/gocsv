@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -123,6 +124,20 @@ var layouts = []string{
 	"2006-01-02",
 	"1/2/2006",
 	"01/02/2006",
+}
+
+const CSV_LAYOUTS = "CSV_LAYOUTS"
+
+func loadNewLayouts() {
+	newLayouts := []string{}
+	for _, x := range strings.Split(os.Getenv(CSV_LAYOUTS), "\n") {
+		newLayouts = append(newLayouts, x)
+	}
+	layouts = append(newLayouts, layouts...)
+}
+
+func init() {
+	loadNewLayouts()
 }
 
 // func isTime(x string) bool {
