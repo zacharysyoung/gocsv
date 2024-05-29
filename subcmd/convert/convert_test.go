@@ -81,7 +81,7 @@ func TestConvertMarkdown(t *testing.T) {
 	}
 }
 
-func fromJSON(data []byte) (subcmd.Runner, error) {
+func fromJSON(data []byte) (subcmd.Streamer, error) {
 	convert := &Convert{}
 	err := json.Unmarshal(data, convert)
 	return convert, err

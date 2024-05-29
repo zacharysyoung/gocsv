@@ -98,7 +98,7 @@ func TestSort(t *testing.T) {
 	}
 }
 
-func fromJSON(data []byte) (subcmd.Runner, error) {
+func fromJSON(data []byte) (subcmd.Streamer, error) {
 	sort := &Sort{}
 	err := json.Unmarshal(data, sort)
 	return sort, err

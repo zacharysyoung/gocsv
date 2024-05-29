@@ -141,7 +141,7 @@ func testSimple(t *testing.T, it subcmd.InferredType, testCases []simpleMatchTes
 	}
 }
 
-func fromJSON(data []byte) (subcmd.Runner, error) {
+func fromJSON(data []byte) (subcmd.Streamer, error) {
 	filter := &Filter{}
 	err := json.Unmarshal(data, filter)
 	return filter, err

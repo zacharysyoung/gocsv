@@ -39,7 +39,7 @@ func TestExclude(t *testing.T) {
 	}
 }
 
-func fromJSON(data []byte) (subcmd.Runner, error) {
+func fromJSON(data []byte) (subcmd.Streamer, error) {
 	cut := &Cut{}
 	err := json.Unmarshal(data, cut)
 	return cut, err

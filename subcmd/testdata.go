@@ -10,14 +10,14 @@ import (
 	"golang.org/x/tools/txtar"
 )
 
-// UnmarshalFunc unmarshals jsonData into the target [Runner]
+// UnmarshalFunc unmarshals jsonData into the target [Streamer]
 // for a [TestdataRunner] to run.
-type UnmarshalFunc func(jsonData []byte) (Runner, error)
+type UnmarshalFunc func(jsonData []byte) (Streamer, error)
 
-// TestdataRunner provides a standard means of testing a [Runner].
+// TestdataRunner provides a standard means of testing a [Streamer].
 // It reads the [golang.org/x/tools/txtar] file at TxtarPath and
 // iterates the test files in the archive, calling the Runner-supplied
-// FromJSON for each test case to create a [Runner] and call its
+// FromJSON for each test case to create a [Streamer] and call its
 // Run method with input and want files.
 //
 // TxtarPath refers to a [golang.org/x/tools/txtar] file archive

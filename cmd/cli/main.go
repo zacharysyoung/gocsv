@@ -18,6 +18,7 @@ import (
 	"github.com/zacharysyoung/gocsv/subcmd/head"
 	"github.com/zacharysyoung/gocsv/subcmd/rename"
 	"github.com/zacharysyoung/gocsv/subcmd/sort"
+	"github.com/zacharysyoung/gocsv/subcmd/stack"
 	"github.com/zacharysyoung/gocsv/subcmd/tail"
 )
 
@@ -31,13 +32,14 @@ filter  Filter rows of input CSV based on values in a column
 head    Print beggining rows of input CSV
 rename  Rename input CSV's columns
 sort    Sort rows of input CSV based on a column's values
+stack   Append multiple input CSVs, one top of the other
 tail    Print ending rows of input CSV
 view    Print input CSV in nice-to-look-at formats
 `
 
-type runnerMaker func(...string) (subcmd.Runner, []string, error)
+type streamerMaker func(...string) (subcmd.Streamer, []string, error)
 
-var runners = map[string]runnerMaker{
+var streamers = map[string]streamerMaker{
 	"clean":  newClean,
 	"conv":   newConvert,
 	"cut":    newCut,
@@ -47,6 +49,22 @@ var runners = map[string]runnerMaker{
 	"sort":   newSort,
 	"tail":   newTail,
 	"view":   newView,
+}
+
+func isStreamer(name string) bool {
+	_, ok := streamers[name]
+	return ok
+}
+
+type filesReaderMaker func(...string) (subcmd.FilesReader, []string, error)
+
+var filesReaders = map[string]filesReaderMaker{
+	"stack": newStack,
+}
+
+func isFilesReader(name string) bool {
+	_, ok := filesReaders[name]
+	return ok
 }
 
 func main() {
@@ -63,12 +81,25 @@ func main() {
 
 	name := os.Args[1]
 
-	newfunc, ok := runners[name]
-	if !ok {
+	var err error
+	switch {
+	case isStreamer(name):
+		err = runStreamer(name)
+	case isFilesReader(name):
+		err = runFilesReader(name)
+	default:
 		fmt.Fprintf(os.Stderr, "error: no command %s\n", name)
 		printHelp()
 	}
+	if err != nil {
+		errorOut("", err)
+	}
 
+	return
+}
+
+func runStreamer(name string) error {
+	newfunc := streamers[name]
 	sc, tailArgs, err := newfunc(os.Args[2:]...)
 	if err != nil {
 		errorBadArgs(err)
@@ -86,14 +117,29 @@ func main() {
 		errorBadArgs(fmt.Errorf("got %d extra args; %s allows for only one named file", len(tailArgs), name))
 	}
 
-	if err := sc.Run(r, os.Stdout); err != nil {
-		errorOut("", err)
-	}
-
-	return
+	return sc.Run(r, os.Stdout)
 }
 
-func newClean(args ...string) (subcmd.Runner, []string, error) {
+func runFilesReader(name string) error {
+	newfunc := filesReaders[name]
+	sc, tailArgs, err := newfunc(os.Args[2:]...)
+	if err != nil {
+		errorBadArgs(err)
+	}
+
+	readers := make([]io.Reader, 0)
+	for _, fpath := range tailArgs {
+		r, err := os.Open(fpath)
+		if err != nil {
+			return err
+		}
+		readers = append(readers, r)
+	}
+
+	return sc.Run(readers, os.Stdout)
+}
+
+func newClean(args ...string) (subcmd.Streamer, []string, error) {
 	const usage = "[-h] [-trim]"
 
 	var (
@@ -113,7 +159,7 @@ func newClean(args ...string) (subcmd.Runner, []string, error) {
 	return sc, fs.Args(), nil
 }
 
-func newConvert(args ...string) (subcmd.Runner, []string, error) {
+func newConvert(args ...string) (subcmd.Streamer, []string, error) {
 	const usage = "[-h] -fields | -md [file]"
 
 	var (
@@ -140,7 +186,7 @@ func newConvert(args ...string) (subcmd.Runner, []string, error) {
 	return sc, fs.Args(), nil
 }
 
-func newCut(args ...string) (subcmd.Runner, []string, error) {
+func newCut(args ...string) (subcmd.Streamer, []string, error) {
 	var (
 		fs       = flag.NewFlagSet("cut", flag.ExitOnError)
 		colsflag = fs.String("cols", "", "a range of columns to select, e.g., 1,3-5,2")
@@ -154,7 +200,7 @@ func newCut(args ...string) (subcmd.Runner, []string, error) {
 	return cut.NewCut(groups, *exflag), fs.Args(), nil
 }
 
-func newFilter(args ...string) (subcmd.Runner, []string, error) {
+func newFilter(args ...string) (subcmd.Streamer, []string, error) {
 	const usage = "[-h]  -col col_num -eq|-ne|-lt|-lte|-gt|-gte|-re value  [-i] [-exclude] [-no-infer] [file]"
 
 	var (
@@ -231,7 +277,7 @@ func newFilter(args ...string) (subcmd.Runner, []string, error) {
 	return sc, fs.Args(), nil
 }
 
-func newHead(args ...string) (subcmd.Runner, []string, error) {
+func newHead(args ...string) (subcmd.Streamer, []string, error) {
 	const usage = "[-h] [-n] [file]"
 	var (
 		fs = flag.NewFlagSet("head", flag.ExitOnError)
@@ -264,7 +310,7 @@ func newHead(args ...string) (subcmd.Runner, []string, error) {
 	return head.NewHead(n, fromBottom), fs.Args(), nil
 }
 
-func newRename(args ...string) (subcmd.Runner, []string, error) {
+func newRename(args ...string) (subcmd.Streamer, []string, error) {
 	const usage = "[-h] [-cols] [-names | -regexp [-repl] | -keys] [file]"
 	var (
 		fs         = flag.NewFlagSet("select", flag.ExitOnError)
@@ -291,7 +337,20 @@ func newRename(args ...string) (subcmd.Runner, []string, error) {
 	return rename.NewRename(groups, names, *regexpflag, *replflag, *keysflag), fs.Args(), nil
 }
 
-func newSort(args ...string) (subcmd.Runner, []string, error) {
+func newStack(args ...string) (subcmd.FilesReader, []string, error) {
+	const usage = "[-h] file1 file2 [...fileN]"
+	var (
+		fs = flag.NewFlagSet("stack", flag.ExitOnError)
+	)
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of stack: %s\n", usage)
+		os.Exit(2)
+	}
+	fs.Parse(args)
+	return stack.NewStack(), fs.Args(), nil
+}
+
+func newSort(args ...string) (subcmd.Streamer, []string, error) {
 	var (
 		fs       = flag.NewFlagSet("sort", flag.ExitOnError)
 		colsflag = fs.String("cols", "", "a range of columns to use as the sort key, e.g., 1,3-5,2")
@@ -305,7 +364,7 @@ func newSort(args ...string) (subcmd.Runner, []string, error) {
 	return sort.NewSort(cols, *revflag, false), fs.Args(), nil
 }
 
-func newTail(args ...string) (subcmd.Runner, []string, error) {
+func newTail(args ...string) (subcmd.Streamer, []string, error) {
 	const usage = "[-h] [-n] [file]"
 	var (
 		fs = flag.NewFlagSet("tail", flag.ExitOnError)
@@ -339,7 +398,7 @@ func newTail(args ...string) (subcmd.Runner, []string, error) {
 	return tail.NewTail(n, fromBottom), fs.Args(), nil
 }
 
-func newView(args ...string) (subcmd.Runner, []string, error) {
+func newView(args ...string) (subcmd.Streamer, []string, error) {
 	const usage = "[-h] [-box [-maxh] | -fields | -md] [-maxw]"
 	var (
 		fs         = flag.NewFlagSet("view", flag.ExitOnError)

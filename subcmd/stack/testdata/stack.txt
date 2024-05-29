@@ -1,0 +1,31 @@
+Does not conform to subcmd/testdata test harness.
+-- in1 --
+A,B
+x,1
+y,2
+-- in2 --
+A,B
+z,3
+-- simple --
+A,B
+x,1
+y,2
+z,3
+-- in1 --
+A,B
+-- in2 --
+A,B
+-- empty --
+A,B
+-- in1 --
+A,B
+-- in2 --
+B,A
+-- err --
+reader #2: header doesn't match first header
+-- in1 --
+A,B
+-- in2 --
+a,b
+-- err --
+reader #2: header doesn't match first header

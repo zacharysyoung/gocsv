@@ -8,7 +8,7 @@ import (
 	xx "github.com/zacharysyoung/gocsv/subcmd"
 )
 
-func fromJSON(data []byte) (xx.Runner, error) {
+func fromJSON(data []byte) (xx.Streamer, error) {
 	head := &Head{}
 	err := json.Unmarshal(data, head)
 	return head, err

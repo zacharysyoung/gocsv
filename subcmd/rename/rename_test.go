@@ -84,7 +84,7 @@ func TestSanitizeIdentifier(t *testing.T) {
 	}
 }
 
-func fromJSON(data []byte) (subcmd.Runner, error) {
+func fromJSON(data []byte) (subcmd.Streamer, error) {
 	rename := &Rename{}
 	err := json.Unmarshal(data, rename)
 	return rename, err

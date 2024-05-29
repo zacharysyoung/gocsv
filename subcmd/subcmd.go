@@ -9,14 +9,20 @@ import (
 	"io"
 )
 
-// Runner is an interface for manipulating streams of data,
-// primarily tabular, and primarily CSV at that.
-type Runner interface {
+// Streamer is an interface for manipulating a stream of data
+// between a singular input and a singular output.
+type Streamer interface {
 	Run(io.Reader, io.Writer) error
 }
 
+// FilesReader is an interface for handling multiple input
+// streams.
+type FilesReader interface {
+	Run([]io.Reader, io.Writer) error
+}
+
 // ErrNoHeader is the error returned by a Runner if its CSV reader
-// doesn't find a header.
+// doesn't find at least a header.
 var ErrNoHeader = errors.New("no data")
 
 // Base0Cols turns the friendly 1-based indexes in cols to
@@ -93,4 +99,18 @@ Error:
 		}
 	}
 	return
+}
+
+// CompareHeaders compares header h1 to h2 and returns a nil error
+// if both match exactly.
+func CompareHeaders(h1, h2 []string) error {
+	if len(h1) != len(h2) {
+		return fmt.Errorf("len(h1) = %d != len(h2) = %d", len(h1), len(h2))
+	}
+	for i := range h1 {
+		if h1[i] != h2[i] {
+			return fmt.Errorf("h1[%d] = %s != h2[%d] = %s", i, h1[i], i, h2[i])
+		}
+	}
+	return nil
 }

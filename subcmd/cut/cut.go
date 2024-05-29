@@ -1,4 +1,4 @@
-// Package cut implements a [subcmd.Runner] that selects or omits specified
+// Package cut implements a [subcmd.Streamer] that selects or omits specified
 // columns.
 package cut
 
