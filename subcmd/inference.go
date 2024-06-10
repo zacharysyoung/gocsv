@@ -131,6 +131,9 @@ const CSV_LAYOUTS = "CSV_LAYOUTS"
 func loadNewLayouts() {
 	newLayouts := []string{}
 	for _, x := range strings.Split(os.Getenv(CSV_LAYOUTS), "\n") {
+		if x == "" {
+			continue
+		}
 		newLayouts = append(newLayouts, x)
 	}
 	layouts = append(newLayouts, layouts...)

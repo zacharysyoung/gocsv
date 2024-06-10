@@ -148,10 +148,16 @@ func fromJSON(data []byte) (subcmd.Streamer, error) {
 }
 
 func TestTestdata(t *testing.T) {
-	path, err := filepath.Abs("./testdata/filter.txt")
+	paths, err := filepath.Glob("./testdata/*.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
-	tdr := subcmd.NewTestdataRunner(path, fromJSON, t)
-	tdr.Run()
+	for _, path := range paths {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tdr := subcmd.NewTestdataRunner(absPath, fromJSON, t)
+		tdr.Run()
+	}
 }
