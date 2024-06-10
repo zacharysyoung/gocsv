@@ -25,6 +25,8 @@ func TestMatch(t *testing.T) {
 
 	t.Run("String", func(t *testing.T) {
 		testSimple(t, subcmd.String, []simpleMatchTest{
+			{"1", Ne, "", true},
+
 			{"1", Eq, "1", true},
 			{"1", Ne, "2", true},
 			{"2", Lt, "20", true},
@@ -148,16 +150,10 @@ func fromJSON(data []byte) (subcmd.Streamer, error) {
 }
 
 func TestTestdata(t *testing.T) {
-	paths, err := filepath.Glob("./testdata/*.txt")
+	path, err := filepath.Abs("./testdata/filter.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range paths {
-		absPath, err := filepath.Abs(path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		tdr := subcmd.NewTestdataRunner(absPath, fromJSON, t)
-		tdr.Run()
-	}
+	tdr := subcmd.NewTestdataRunner(path, fromJSON, t)
+	tdr.Run()
 }

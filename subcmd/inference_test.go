@@ -64,6 +64,14 @@ func TestCustomLayout(t *testing.T) {
 	}
 }
 
+func TestNoEmptyLayout(t *testing.T) {
+	for _, x := range layouts {
+		if x == "" {
+			t.Errorf("found empty layout string in %q", layouts)
+		}
+	}
+}
+
 func TestInferCols(t *testing.T) {
 	type cols []int
 	type types []InferredType

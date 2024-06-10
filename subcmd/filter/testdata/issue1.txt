@@ -1,9 +1,0 @@
--- in --
-Name,Phone
-alice,555-111-2222
-bobbie,
--- bogus could-not-compare-String-to-Datetime error --
-{"Col": 2, "Operator": "eq", "Value": ""}
--- want --
-Name,Phone
-bobbie,

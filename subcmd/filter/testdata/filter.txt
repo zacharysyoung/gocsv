@@ -54,6 +54,29 @@ H
 3
 2
 -- in --
+A,B,C,D
+1,x,true,2000-01-01
+-- not empty number --
+{"Col": 1, "Operator": "ne", "Value": ""}
+-- want --
+A,B,C,D
+1,x,true,2000-01-01
+-- not empty string --
+{"Col": 2, "Operator": "ne", "Value": ""}
+-- want --
+A,B,C,D
+1,x,true,2000-01-01
+-- not empty bool --
+{"Col": 3, "Operator": "ne", "Value": ""}
+-- want --
+A,B,C,D
+1,x,true,2000-01-01
+-- not empty datetime --
+{"Col": 4, "Operator": "ne", "Value": ""}
+-- want --
+A,B,C,D
+1,x,true,2000-01-01
+-- in --
 H
 1
 A

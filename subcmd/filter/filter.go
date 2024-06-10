@@ -118,12 +118,17 @@ func (xx *Filter) Run(r io.Reader, w io.Writer) error {
 			val any
 			it  subcmd.InferredType
 		)
-		switch xx.NoInference {
-		case true:
+		switch {
+		case xx.NoInference:
 			it = subcmd.String
 			val = xx.Value
-		case false:
-			val, it = subcmd.Infer(xx.Value)
+		default:
+			switch {
+			case xx.Value == "":
+				val, it = "", subcmd.String
+			default:
+				val, it = subcmd.Infer(xx.Value)
+			}
 		}
 
 		if it == subcmd.String && xx.CaseInsensitive {
