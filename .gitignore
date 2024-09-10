@@ -1,1 +1,2 @@
-cmd/cli/cli
+bin
+dist

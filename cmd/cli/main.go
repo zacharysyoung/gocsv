@@ -22,7 +22,9 @@ import (
 	"github.com/zacharysyoung/gocsv/subcmd/tail"
 )
 
-const usage = `Usage: csv [-v | -h] <command> <args>
+const semVer = "v0.1.0"
+
+const usage = `Usage: gozcsv [-v | -h] <command> <args>
 
 Commands:
 clean   Prepare input CSV for further processing
@@ -37,7 +39,7 @@ tail    Print ending rows of input CSV
 view    Print input CSV in nice-to-look-at formats
 `
 
-type streamerMaker func(...string) (subcmd.Streamer, []string, error)
+type streamerMaker func(args ...string) (subcmd.Streamer, []string, error)
 
 var streamers = map[string]streamerMaker{
 	"clean":  newClean,
@@ -569,7 +571,7 @@ func printHelp() {
 }
 
 func printVersion() {
-	s := "gocsv2"
+	s := "gozcsv:" + semVer
 	if bi, ok := debug.ReadBuildInfo(); ok {
 		for _, x := range bi.Settings {
 			if x.Key == "vcs.revision" {
