@@ -1,0 +1,17 @@
+-- in --
+A,B,C,D
+-- default --
+-- want --
+Idx,Name
+1,A
+2,B
+3,C
+4,D
+-- zero-based --
+{"ZeroBased": true}
+-- want --
+Idx,Name
+0,A
+1,B
+2,C
+3,D
