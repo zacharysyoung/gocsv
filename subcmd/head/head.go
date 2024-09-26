@@ -32,7 +32,7 @@ func (xx *Head) CheckConfig() error {
 
 func (xx *Head) Run(r io.Reader, w io.Writer) error {
 	if xx.N < 1 {
-		panic(fmt.Errorf("N = %d; N must be greater than 0", xx.N))
+		panic(fmt.Errorf("N = %d; N must be a positive int", xx.N))
 	}
 
 	rr := csv.NewReader(r)
