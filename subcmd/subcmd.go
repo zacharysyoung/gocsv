@@ -60,7 +60,7 @@ var ErrBadRange = errors.New("bad range")
 
 // Finalize expands ranges into a final, flat list of indexes,
 // checking header to make sure all specified indexes are in
-// bounds. It returns [ErrBadRange] with some specifices for any
+// bounds. It returns [ErrBadRange] with some specifics for any
 // kind of problem.
 //
 // A subcmd that uses Ranges might benefit by calling this method.
@@ -99,18 +99,4 @@ Error:
 		}
 	}
 	return
-}
-
-// CompareHeaders compares header h1 to h2 and returns a nil error
-// if both match exactly.
-func CompareHeaders(h1, h2 []string) error {
-	if len(h1) != len(h2) {
-		return fmt.Errorf("len(h1) = %d != len(h2) = %d", len(h1), len(h2))
-	}
-	for i := range h1 {
-		if h1[i] != h2[i] {
-			return fmt.Errorf("h1[%d] = %s != h2[%d] = %s", i, h1[i], i, h2[i])
-		}
-	}
-	return nil
 }

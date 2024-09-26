@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/zacharysyoung/gocsv/subcmd"
 )
@@ -61,9 +62,8 @@ func stack(reader io.Reader, refHeader []string, csvw *csv.Writer) (header []str
 	switch {
 	case refHeader == nil:
 		csvw.Write(header)
-	case subcmd.CompareHeaders(header, refHeader) != nil:
+	case !slices.Equal(header, refHeader):
 		return nil, errors.New("header doesn't match first header")
-
 	}
 
 	for {
