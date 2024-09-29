@@ -16,6 +16,7 @@ import (
 	"github.com/zacharysyoung/gocsv/subcmd/cut"
 	"github.com/zacharysyoung/gocsv/subcmd/filter"
 	"github.com/zacharysyoung/gocsv/subcmd/head"
+	"github.com/zacharysyoung/gocsv/subcmd/headers"
 	"github.com/zacharysyoung/gocsv/subcmd/rename"
 	"github.com/zacharysyoung/gocsv/subcmd/sort"
 	"github.com/zacharysyoung/gocsv/subcmd/stack"
@@ -32,6 +33,7 @@ cut     Select (or omit) certain columns of input CSV
 conv    Convert non-CSV formats, like Markdown table, to CSV
 filter  Filter rows of input CSV based on values in a column
 head    Print beggining rows of input CSV
+headers Print pairs of Idx/Name for header columns in input CSV
 rename  Rename input CSV's columns
 sort    Sort rows of input CSV based on a column's values
 stack   Append multiple input CSVs, one top of the other
@@ -42,15 +44,16 @@ view    Print input CSV in nice-to-look-at formats
 type streamerMaker func(args ...string) (subcmd.Streamer, []string, error)
 
 var streamers = map[string]streamerMaker{
-	"clean":  newClean,
-	"conv":   newConvert,
-	"cut":    newCut,
-	"filter": newFilter,
-	"head":   newHead,
-	"rename": newRename,
-	"sort":   newSort,
-	"tail":   newTail,
-	"view":   newView,
+	"clean":   newClean,
+	"conv":    newConvert,
+	"cut":     newCut,
+	"filter":  newFilter,
+	"head":    newHead,
+	"headers": newHeaders,
+	"rename":  newRename,
+	"sort":    newSort,
+	"tail":    newTail,
+	"view":    newView,
 }
 
 func isStreamer(name string) bool {
@@ -310,6 +313,21 @@ func newHead(args ...string) (subcmd.Streamer, []string, error) {
 	}
 	fs.Parse(args)
 	return head.NewHead(n, fromBottom), fs.Args(), nil
+}
+
+func newHeaders(args ...string) (subcmd.Streamer, []string, error) {
+	const usage = "[-h] [-0]"
+	var (
+		fs       = flag.NewFlagSet("headers", flag.ExitOnError)
+		zeroflag = fs.Bool("0", false, "print header 0-based indexes")
+	)
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of headers: %s\n", usage)
+		fs.PrintDefaults()
+		os.Exit(2)
+	}
+	fs.Parse(args)
+	return headers.NewHeaders(*zeroflag), fs.Args(), nil
 }
 
 func newRename(args ...string) (subcmd.Streamer, []string, error) {

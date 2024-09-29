@@ -14,7 +14,7 @@ type Headers struct {
 	ZeroBased bool
 }
 
-func NewHeader(zeroBased bool) *Headers {
+func NewHeaders(zeroBased bool) *Headers {
 	return &Headers{zeroBased}
 }
 
