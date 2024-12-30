@@ -20,8 +20,8 @@ type UnmarshalFunc func(jsonData []byte) (Streamer, error)
 // FromJSON for each test case to create a [Streamer] and call its
 // Run method with input and want files.
 //
-// TxtarPath refers to a [golang.org/x/tools/txtar] file archive
-// that follows this format:
+// TxtarPath refers to a txtar file archive that follows
+// this format:
 //   - An optional comment, according to the txtar spec.
 //   - The first file is named "-- in --" and contains the input
 //     text that Runner reads from its io.Reader.
@@ -35,13 +35,13 @@ type UnmarshalFunc func(jsonData []byte) (Streamer, error)
 //     An error-file contains text that must match the string of the expected error returned by the Run method.
 //   - Any number of pairs of JSON-file and want/error-file can refer to a previous, single, in-file.
 //
-// For example, the following txtar file contains a comment, and four test cases.
-// The lower and upper test cases both refer to the first in-file.
-// The reverse test case refers to its own in-file.
-// The int test case expects an error.
+// For example, the following txtar file contains a comment, and four test cases:
+//   - The lower and upper tests both refer to the first in-file, `Foo`.
+//   - The reverse test refers to its own in-file.
+//   - The int test expects an error.
 //
-//	stringfuncs doesn't have any _test.go unit tests.
-//	All tests happen here.
+// stringfuncs.txt:
+//
 //	-- in --
 //	Foo
 //	-- lower --
@@ -88,24 +88,24 @@ func (tdr TestdataRunner) Run() {
 		}
 
 		var (
-			cache []byte // cache input for multiple test cases
-			i     = 0
+			inputCache []byte // cache input for multiple test cases
+			i          = 0
 		)
 
 		for i < len(a.Files) {
 			if a.Files[i].Name == "in" {
-				cache = []byte(preprocess(a.Files[i].Data))
+				inputCache = []byte(preprocess(a.Files[i].Data))
 				i++
 			}
 
 			testname := a.Files[i].Name
 			data := a.Files[i].Data
 			i++
-			wantb := a.Files[i].Data
+			want := a.Files[i].Data
 			wantname := a.Files[i].Name
 			i++
 			t.Run(testname, func(t *testing.T) {
-				want := preprocess(wantb)
+				want := preprocess(want)
 				if len(data) == 0 {
 					data = []byte("{}")
 				}
@@ -114,7 +114,7 @@ func (tdr TestdataRunner) Run() {
 					t.Fatal(err)
 				}
 
-				r := bytes.NewReader(cache)
+				r := bytes.NewReader(inputCache)
 				buf := &bytes.Buffer{}
 
 				defer func() {
