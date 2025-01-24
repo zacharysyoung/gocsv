@@ -103,10 +103,8 @@ func Finalize2(ranges []Range2, header []string) (finalCols []int, err error) {
 		a, b := r.a, r.b
 		switch {
 		case goodSingle(a, b, n):
-			fmt.Printf("single a=%d b=%d\n", a, b)
 			finalCols = append(finalCols, a)
 		case goodRange(a, b, n):
-			fmt.Printf("range a=%d b=%d\n", a, b)
 			if a == -1 {
 				a = n
 			}
@@ -115,12 +113,10 @@ func Finalize2(ranges []Range2, header []string) (finalCols []int, err error) {
 			}
 
 			if a < b {
-				fmt.Println("  ascending")
 				for i := a; i <= b; i++ {
 					finalCols = append(finalCols, i)
 				}
 			} else {
-				fmt.Println("  descending")
 				for i := a; i >= b; i-- {
 					finalCols = append(finalCols, i)
 				}

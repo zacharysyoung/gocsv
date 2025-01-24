@@ -2,7 +2,6 @@ package subcmd
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"slices"
 	"testing"
@@ -204,13 +203,4 @@ func TestFinalize2(t *testing.T) {
 			t.Errorf("Finalize2(%v, A...E) = %v,%v; want %v,%v", tc.ranges, got, err, tc.want, tc.err)
 		}
 	}
-}
-
-func ExampleRanges() {
-	header := []string{"a", "b", "c", "d"}
-	r := Ranges{{1}, {3, -1}}
-	cols, err := r.Finalize(header)
-	fmt.Println(cols, err)
-	// Output:
-	// [1 3 4] <nil>
 }

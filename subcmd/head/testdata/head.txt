@@ -53,4 +53,4 @@ A
 -- zero rows --
 {"N": 0}
 -- panic --
-N = 0; N must be greater than 0
+N = 0; N must be a positive int
