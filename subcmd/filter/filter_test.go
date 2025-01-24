@@ -46,6 +46,7 @@ func TestMatch(t *testing.T) {
 	t.Run("Number", func(t *testing.T) {
 		testSimple(t, subcmd.Number, []simpleMatchTest{
 			{"1", Eq, 1.0, true},
+			{"1.0", Eq, 1.0, true},
 			{"1", Ne, 2.0, true},
 			{"2", Lt, 3.0, true},
 			{"3", Gt, 2.0, true},
@@ -53,8 +54,6 @@ func TestMatch(t *testing.T) {
 			{"3", Lte, 3.0, true},
 			{"3", Gte, 3.0, true},
 			{"4", Gte, 3.0, true},
-
-			{"1.0", Eq, float64(1), true},
 
 			{"1", Ne, 1.0, false},
 			{"1", Eq, 2.0, false},
@@ -71,7 +70,7 @@ func TestMatch(t *testing.T) {
 			jan2 = time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC)
 			jan3 = time.Date(2000, 1, 3, 0, 0, 0, 0, time.UTC)
 		)
-		testSimple(t, subcmd.Time, []simpleMatchTest{
+		testSimple(t, subcmd.DateTime, []simpleMatchTest{
 			{"2000-01-01", Eq, jan1, true},
 			{"2000-01-01", Ne, jan2, true},
 			{"2000-01-02", Lt, jan3, true},
@@ -124,7 +123,7 @@ func TestMatch(t *testing.T) {
 func testSimple(t *testing.T, it subcmd.InferredType, testCases []simpleMatchTest) {
 	for _, tc := range testCases {
 		sVal := fmt.Sprintf("%v", tc.val)
-		if it == subcmd.Time {
+		if it == subcmd.DateTime {
 			sVal = sVal[:10]
 		}
 

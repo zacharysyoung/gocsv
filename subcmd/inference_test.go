@@ -31,10 +31,10 @@ func TestInfer(t *testing.T) {
 		{"falSE", Bool, false},
 		{"F", Bool, false},
 
-		{"2000-1-1", Time, jan1},
-		{"2000-01-01", Time, jan1},
-		{"1/1/2000", Time, jan1},
-		{"01/01/2000", Time, jan1},
+		{"2000-1-1", DateTime, jan1},
+		{"2000-01-01", DateTime, jan1},
+		{"1/1/2000", DateTime, jan1},
+		{"01/01/2000", DateTime, jan1},
 	}
 	for _, tc := range testCases {
 		v, tt := Infer(tc.s)
@@ -59,8 +59,8 @@ func TestCustomLayout(t *testing.T) {
 	loadNewLayouts()
 
 	v, it = Infer(sTime)
-	if it != Time || v != jan1 {
-		t.Errorf("after adding %s=%q, Infer(%q) = %q, %s; want %q, %s", CSV_LAYOUTS, newLayout, sTime, v, it, jan1, Time)
+	if it != DateTime || v != jan1 {
+		t.Errorf("after adding %s=%q, Infer(%q) = %q, %s; want %q, %s", CSV_LAYOUTS, newLayout, sTime, v, it, jan1, DateTime)
 	}
 }
 
@@ -142,7 +142,7 @@ func TestInferCols(t *testing.T) {
 			},
 			cols: cols{1, 3},
 			want: types{
-				Number, Time,
+				Number, DateTime,
 			},
 		},
 		{
@@ -155,7 +155,7 @@ func TestInferCols(t *testing.T) {
 			},
 			cols: cols{1},
 			want: types{
-				Time,
+				DateTime,
 			},
 		},
 	}
@@ -208,9 +208,9 @@ func TestCompare(t *testing.T) {
 		{Number, 2.0, 2.0, 0},
 		{Number, 2.0, 1.0, 1},
 
-		{Time, jan1, jan2, -1},
-		{Time, jan2, jan2, 0},
-		{Time, jan2, jan1, 1},
+		{DateTime, jan1, jan2, -1},
+		{DateTime, jan2, jan2, 0},
+		{DateTime, jan2, jan1, 1},
 
 		{String, "a", "b", -1},
 		{String, "b", "b", 0},
@@ -224,7 +224,7 @@ func TestCompare(t *testing.T) {
 				t.Errorf("compare(%t, %t) got %d; want %d", tc.a, tc.b, got, tc.want)
 			case String:
 				t.Errorf("compare(%q, %q) got %d; want %d", tc.a, tc.b, got, tc.want)
-			case Time:
+			case DateTime:
 				t.Errorf("compare(%s, %s) got %d; want %d", tfmt(tc.a), tfmt(tc.b), got, tc.want)
 			}
 		}

@@ -17,7 +17,7 @@ func TestPad(t *testing.T) {
 		{"foo", "", subcmd.String, 5, "foo  "},
 		{"foo", "", subcmd.Number, 5, "  foo"},
 		{"foo", "", subcmd.Bool, 5, "  foo"},
-		{"foo", "", subcmd.Time, 5, "  foo"},
+		{"foo", "", subcmd.DateTime, 5, "  foo"},
 
 		{"foo", ",", subcmd.String, 5, "foo,  "},
 		{"foo", ",", subcmd.Number, 5, "  foo,"},

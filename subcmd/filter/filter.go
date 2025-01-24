@@ -203,7 +203,7 @@ func match(s string, op Operator, v any, it subcmd.InferredType, lower, negate b
 			case Gte:
 				return x >= v.(float64), err
 			}
-		case subcmd.Time:
+		case subcmd.DateTime:
 			a, err := subcmd.ToTime(s)
 			b := v.(time.Time)
 			switch op {

@@ -15,7 +15,7 @@ type InferredType int
 const (
 	Number InferredType = iota
 	Bool
-	Time // date and datetime
+	DateTime
 	String
 )
 
@@ -27,7 +27,7 @@ func (it InferredType) String() string {
 		return "Number"
 	case Bool:
 		return "Bool"
-	case Time:
+	case DateTime:
 		return "Datetime"
 	case String:
 		return "String"
@@ -42,7 +42,7 @@ func Infer(s string) (val any, it InferredType) {
 		return val, Bool
 	}
 	if val, err := ToTime(s); err == nil {
-		return val, Time
+		return val, DateTime
 	}
 	return s, String
 }
@@ -163,7 +163,7 @@ func Compare1(a, b any, it InferredType) int {
 		return CompareBools(a.(bool), b.(bool))
 	case Number:
 		return cmp.Compare(a.(float64), b.(float64))
-	case Time:
+	case DateTime:
 		return a.(time.Time).Compare(b.(time.Time))
 	default:
 		return cmp.Compare(a.(string), b.(string))
@@ -180,12 +180,11 @@ func Compare2(a, b string, it InferredType) int {
 		x, _ := ToNumber(a)
 		y, _ := ToNumber(b)
 		return cmp.Compare(x, y)
-	case Time:
+	case DateTime:
 		x, _ := ToTime(a)
 		y, _ := ToTime(b)
 		return x.Compare(y)
 	default:
 		return cmp.Compare(a, b)
 	}
-
 }
