@@ -13,3 +13,14 @@ y," 20"," ii"
 A,B,C $
 x,1,i $
 y,20,ii$
+-- in --
+A,B
+1,2"
+-- default --
+-- err --
+parse error on line 2, column 4: bare " in non-quoted-field
+-- lazy --
+{"Lazy": true}
+-- want --
+A,B
+1,"2"""

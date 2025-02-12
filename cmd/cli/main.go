@@ -145,11 +145,12 @@ func runFilesReader(name string) error {
 }
 
 func newClean(args ...string) (subcmd.Streamer, []string, error) {
-	const usage = "[-h] [-trim]"
+	const usage = "[-h] [-lazy] [-trim]"
 
 	var (
 		fs       = flag.NewFlagSet("clean", flag.ExitOnError)
-		trimFlag = fs.Bool("trim", false, "trim leading spaces from fields")
+		lazyFlag = fs.Bool("lazy", false, "use encoding/csv's lazy quotes")
+		trimFlag = fs.Bool("trim", false, "use encoding/csv's trim leading spaces")
 	)
 
 	fs.Usage = func() {
@@ -160,7 +161,7 @@ func newClean(args ...string) (subcmd.Streamer, []string, error) {
 
 	fs.Parse(args)
 
-	sc := clean.NewClean(*trimFlag)
+	sc := clean.NewClean(*lazyFlag, *trimFlag)
 	return sc, fs.Args(), nil
 }
 
