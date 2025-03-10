@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
@@ -54,7 +55,6 @@ func (sub *ReplaceSubcommand) RunReplace(inputCsv *InputCsv, outputCsvWriter Out
 	}
 
 	// Get replace function
-	var replaceFunc func(string) string
 	if sub.caseInsensitive {
 		sub.Regexp = "(?i)" + sub.Regexp
 	}
@@ -62,49 +62,21 @@ func (sub *ReplaceSubcommand) RunReplace(inputCsv *InputCsv, outputCsvWriter Out
 	if err != nil {
 		ExitWithError(err)
 	}
-	replaceFunc = func(field string) string {
-		return re.ReplaceAllString(field, sub.repl)
+
+	var fReplacer replacerFunc
+	switch sub.Templ {
+	default:
+		fReplacer = templateReplacerFunc(re, sub.Templ)
+	case "":
+		fReplacer = func(field string) (string, error) {
+			return re.ReplaceAllString(field, sub.repl), nil
+		}
 	}
 
-	if sub.Templ != "" {
-		// match subgroup tokens like $0 or ${22}
-		reGroupToken := regexp.MustCompile(`\$\{?(\d+)\}?`)
-		templ := reGroupToken.ReplaceAllString(sub.Templ, `.MatchKey_$1`)
-		// fmt.Println(templ)
-
-		tmpl, err := template.New("template").Funcs(sprig.FuncMap()).Parse(templ)
-		if err != nil {
-			ExitWithError(err)
-		}
-
-		templateData := make(map[string]string)
-
-		replaceFunc = func(field string) string {
-			// Clear previous values
-			for k := range templateData {
-				delete(templateData, k)
-			}
-
-			submatches := re.FindAllStringSubmatch(field, -1)
-			fmt.Println("re:", re, "field:", field, "submatches:", submatches)
-			if len(submatches) > 0 && len(submatches[0]) > 0 {
-				for i := 0; i < len(submatches[0]); i++ {
-					templateData[fmt.Sprintf("MatchKey_%d", i)] = submatches[0][i]
-				}
-			}
-			fmt.Println(templateData)
-
-			var rendered bytes.Buffer
-			err = tmpl.Execute(&rendered, templateData)
-			return re.ReplaceAllString(field, rendered.String())
-		}
-
-	}
-
-	ReplaceWithFunc(inputCsv, outputCsvWriter, columns, replaceFunc)
+	ReplaceWithFunc(inputCsv, outputCsvWriter, columns, fReplacer)
 }
 
-func ReplaceWithFunc(inputCsv *InputCsv, outputCsvWriter OutputCsvWriter, columns []string, replaceFunc func(string) string) {
+func ReplaceWithFunc(inputCsv *InputCsv, outputCsvWriter OutputCsvWriter, columns []string, fReplacer replacerFunc) {
 	// Read header to get column index and write.
 	header, err := inputCsv.Read()
 	if err != nil {
@@ -128,8 +100,72 @@ func ReplaceWithFunc(inputCsv *InputCsv, outputCsvWriter OutputCsvWriter, column
 		}
 		copy(rowToWrite, row)
 		for _, columnIndex := range columnIndices {
-			rowToWrite[columnIndex] = replaceFunc(rowToWrite[columnIndex])
+			field, err := fReplacer(rowToWrite[columnIndex])
+			if err != nil {
+				ExitWithError(err)
+			}
+			rowToWrite[columnIndex] = field
 		}
 		outputCsvWriter.Write(rowToWrite)
+	}
+}
+
+// match submatch-specifiers like $0, or its escaped
+// equivalent ${0}, submatching the number
+var reSubmatchToken = regexp.MustCompile(`\$\{?(\d+)\}?`)
+
+const templDataPrefix = ".Submatch_"
+
+// convertTemplNames replaces submatch specifiers with names
+// that can be called while executing a template,
+// e.g.:, $0 → .Submatch_0, ${4} → .Submatch_4.
+func convertTemplNames(templ string) (newTempl string) {
+	return reSubmatchToken.ReplaceAllString(templ, templDataPrefix+"$1")
+}
+
+// A replacerFunc takes a field and returns it with some
+// text replaced.
+type replacerFunc func(field string) (string, error)
+
+// templateReplacerFunc returns a func that takes a field that
+// and replaces the field with the rendered templ for each
+// submatch of re.
+func templateReplacerFunc(re *regexp.Regexp, templ string) replacerFunc {
+	newTempl := convertTemplNames(templ)
+	// fmt.Println(newTempl)
+
+	t, err := template.New("template").Funcs(sprig.FuncMap()).Parse(newTempl)
+	if err != nil {
+		ExitWithError(err)
+	}
+
+	var (
+		// for the field "foo987" and the re `([a-z]+)(\d*(\d))`, and
+		// using [namePrefix]:
+		//   {Submatch_0: foo987 Submatch_1:foo Submatch_2:987 Submatch_3:7}
+		submatchData = make(map[string]string)
+
+		namePrefix = strings.TrimPrefix(templDataPrefix, ".")
+		buf        = &bytes.Buffer{}
+	)
+
+	return func(field string) (string, error) {
+		matches := re.FindAllStringSubmatch(field, -1)
+		for _, match := range matches {
+			for k := range submatchData {
+				submatchData[k] = "<no-value>"
+			}
+			for i, value := range match {
+				name := fmt.Sprintf("%s%d", namePrefix, i)
+				submatchData[name] = value
+			}
+			buf.Reset()
+			err = t.Execute(buf, submatchData)
+			if err != nil {
+				return field, err
+			}
+			field = strings.Replace(field, match[0], buf.String(), 1)
+		}
+		return field, nil
 	}
 }
