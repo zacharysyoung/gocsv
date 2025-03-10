@@ -141,7 +141,7 @@ func Test_templateReplacerFunc(t *testing.T) {
 		{`([a-z]+)(\d+)`, `{{ printf "%s%02d" $1 (atoi $2) }}`, "yz2", "yz02", nil},
 
 		// multiple matches, with submatches
-		{`\d+`, `{{ printf "%02d" (atoi $0) }}`, "ab1 yz2", "ab01 yz02", nil},
+		{`([a-z]+)(\d+)`, `{{ printf "%s%02d" $1 (atoi $2) }}`, "ab1 yz2", "ab01 yz02", nil},
 
 		// no matches
 		{`\d+`, `{{ printf "%02d" (atoi $0) }}`, "ab yz", "ab yz", nil},
