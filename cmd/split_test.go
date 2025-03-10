@@ -91,9 +91,3 @@ func TestSplit(t *testing.T) {
 		})
 	}
 }
-
-// trimb converts b to a string and calls [strings.TrimSpace]
-// on it.
-func trimb(b []byte) string {
-	return strings.TrimSpace(string(b))
-}

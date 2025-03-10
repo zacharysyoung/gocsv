@@ -1,0 +1,91 @@
+Test files for the replace subcommand.
+
+-- test: no match --
+-c=A -regex=baz -repl=bar
+
+-- in: --
+A
+Foo
+food
+afoot
+
+-- want: --
+A
+Foo
+food
+afoot
+
+-- test: simple regexp --
+-c=A -regex=^foo -repl=bar
+
+-- in: --
+A
+Foo
+food
+afoot
+
+-- want: --
+A
+Foo
+bard
+afoot
+
+-- test: regexp case-insensitive --
+-c=A -regex=^foo -i -repl=bar
+
+-- in: --
+A
+Foo
+food
+afoot
+
+-- want: --
+A
+bar
+bard
+afoot
+
+-- test: regexp capture group --
+-c=A -regex=f(oo) -i -repl=b$1
+
+-- in: --
+A
+Foo
+food
+afoot
+
+-- want: --
+A
+boo
+bood
+aboot
+
+-- test: template, one group --
+{"Col": "A", "Regexp": "\\d+$", "Templ": "{{ printf \"%05d\" (atoi $0) }}"}
+
+-- in: --
+A
+x123
+y4
+z99
+
+-- want: --
+A
+x00123
+y00004
+z00099
+
+-- test: template, two groups --
+{"Col": "A", "Regexp": "\\d+", "Templ": "{{ printf \"%05d\" (atoi $0) }}"}
+
+-- in: --
+A
+a98 x123
+b3 y4
+c2182 z99
+
+-- want: --
+A
+a00098 x00098
+b00003 y00003
+c02182 z02182
