@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
+	"html"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -125,6 +125,24 @@ func TestReplace(t *testing.T) {
 	}
 }
 
+/*
+@ggrothendieck, my question was getting at this behavior: if we set up the replacer with this regex and template:
+- `\d+`
+- `{{ printf "%05d" (atoi $0) }}`
+
+then we get, `a98 x123` → `a00098 x00123`.
+
+Set it up like:
+- `\d+(\d)`
+- `{{ printf "%05d" (atoi $1) }}`
+
+we get, `a98 x123` → `a90008 x12003`.
+
+I've played around with something similar on [regexr.com/8d0nd](https://regexr.com/8d0nd)
+
+Being able to
+*/
+
 func Test_templateReplacerFunc(t *testing.T) {
 	testCases := []struct {
 		re    string
@@ -132,44 +150,48 @@ func Test_templateReplacerFunc(t *testing.T) {
 		field string
 
 		want string
-		err  error
 	}{
 		// single match, no submatch
-		{`\d+`, `{{ printf "%02d" (atoi $0) }}`, "yz2", "yz02", nil},
+		{`\d+`, `{{ printf "%04s" $0 }}`, "ab1", "ab0001"},
 
 		// single match, with submatches (equivalent to above)
-		{`([a-z]+)(\d+)`, `{{ printf "%s%02d" $1 (atoi $2) }}`, "yz2", "yz02", nil},
+		{`([a-z]+)(\d+)`, `{{ printf "%s%04s" $1 $2 }}`, "ab1", "ab0001"},
 
 		// multiple matches, with submatches
-		{`([a-z]+)(\d+)`, `{{ printf "%s%02d" $1 (atoi $2) }}`, "ab1 yz2", "ab01 yz02", nil},
+		{`([a-z]+)(\d+)`, `{{ printf "%s%04s" $1 $2 }}`, "ab1 yz23", "ab0001 yz0023"},
+
+		// multiple matches, with submatches
+		{`\d+(\d)`, `{{ printf "%04s" $1 }}`, "ab1 yz23", "ab1 yz0003"},
 
 		// no matches
-		{`\d+`, `{{ printf "%02d" (atoi $0) }}`, "ab yz", "ab yz", nil},
+		{`\d+`, `{{ printf "%02s" $0 }}`, "ab yz", "ab yz"},
 
 		// specified non-existent submatch in template
-		{`\d+`, `{{ printf "%02d" (atoi $1) }}`, "ab1 yz2", "ab yz", errors.New("at <.Submatch_1>: invalid value")},
+		// native template functions fail because submatchData was never initialized
+		{`\d+`, `{{ printf "%02s"  $1 }}`, "ab1 yz23", "ab%!s(<nil>) yz%!s(<nil>)"},
+
+		// sprig's atoi treats the same problem differently and errors-out
+		// {`\d+`, `{{ printf "%02d"  (atoi $1) }}`, "ab1 yz23", "ab yz"},
+
+		//
+		//
+		// user-submitted, specific, but already covered by previous cases
+		//{`(\d+)(\D+)(\d)(.*)`, `{{ printf "%05s%si%04s%s" $1 $2 $3 $4 }}`, "abc12def13xyz14", "abc00012defi00013xyz14"},
 	}
 
 	for _, tc := range testCases {
 		re := regexp.MustCompile(tc.re)
 		f := templateReplacerFunc(re, tc.templ)
-		got, err := f(tc.field)
+		got := f(tc.field)
 
-		if err != nil || tc.err != nil {
-			switch {
-			case err != nil && tc.err == nil:
-				t.Errorf("got %v; want <nil>", err)
-			case err == nil && tc.err != nil:
-				t.Errorf("got <nil>; want ...%v...", tc.err)
-
-			case !strings.Contains(err.Error(), tc.err.Error()):
-				t.Errorf("got %v; want ...%v...", err, tc.err)
-			}
-			continue
-		}
+		// don't want to specify html-escaped values in want
+		got = html.UnescapeString(got)
 
 		if got != tc.want {
-			t.Errorf("(re=%s templ=%s field=%s) got %s; want %s", tc.re, tc.templ, tc.field, got, tc.want)
+			t.Errorf("\n   re %s\ntempl %s\nfield %s\n----- ------\n  got %s\n want %s", tc.re, tc.templ, tc.field, got, tc.want)
 		}
 	}
 }
+
+// test parity between -repl and -templ when field values
+// don't support the submatches in replacement/template

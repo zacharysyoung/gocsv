@@ -224,6 +224,17 @@ func concat(outrow, row1, row2 []string) {
 	}
 }
 
+func debugln(args ...interface{}) {
+	if DEBUG {
+		fmt.Println(args...)
+	}
+}
+func debugf(format string, args ...interface{}) {
+	if DEBUG {
+		fmt.Printf(format, args...)
+	}
+}
+
 func ExitWithError(err error) {
 	if DEBUG {
 		panic(err)

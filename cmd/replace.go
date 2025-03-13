@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"html/template"
 	"io"
 	"regexp"
 	"strings"
-	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
 )
@@ -36,7 +36,8 @@ func (sub *ReplaceSubcommand) SetFlags(fs *flag.FlagSet) {
 	fs.StringVar(&sub.repl, "repl", "", "Replacement string")
 	fs.BoolVar(&sub.caseInsensitive, "case-insensitive", false, "Make regex case insensitive")
 	fs.BoolVar(&sub.caseInsensitive, "i", false, "Make regex case insensitive (shorthand)")
-	fs.StringVar(&sub.Templ, "templ", "", "")
+	fs.StringVar(&sub.Templ, "template", "", "")
+	fs.StringVar(&sub.Templ, "t", "", "")
 }
 
 func (sub *ReplaceSubcommand) Run(args []string) {
@@ -68,9 +69,7 @@ func (sub *ReplaceSubcommand) RunReplace(inputCsv *InputCsv, outputCsvWriter Out
 	default:
 		fReplacer = templateReplacerFunc(re, sub.Templ)
 	case "":
-		fReplacer = func(field string) (string, error) {
-			return re.ReplaceAllString(field, sub.repl), nil
-		}
+		fReplacer = regexpReplacerFunc(re, sub.repl)
 	}
 
 	ReplaceWithFunc(inputCsv, outputCsvWriter, columns, fReplacer)
@@ -100,39 +99,29 @@ func ReplaceWithFunc(inputCsv *InputCsv, outputCsvWriter OutputCsvWriter, column
 		}
 		copy(rowToWrite, row)
 		for _, columnIndex := range columnIndices {
-			field, err := fReplacer(rowToWrite[columnIndex])
-			if err != nil {
-				ExitWithError(err)
-			}
-			rowToWrite[columnIndex] = field
+			rowToWrite[columnIndex] = fReplacer(rowToWrite[columnIndex])
 		}
 		outputCsvWriter.Write(rowToWrite)
 	}
 }
 
-// match submatch-specifiers like $0, or its escaped
-// equivalent ${0}, submatching the number
-var reSubmatchToken = regexp.MustCompile(`\$\{?(\d+)\}?`)
-
-const templDataPrefix = ".Submatch_"
-
-// convertTemplNames replaces submatch specifiers with names
-// that can be called while executing a template,
-// e.g.:, $0 → .Submatch_0, ${4} → .Submatch_4.
-func convertTemplNames(templ string) (newTempl string) {
-	return reSubmatchToken.ReplaceAllString(templ, templDataPrefix+"$1")
-}
-
 // A replacerFunc takes a field and returns it with some
 // text replaced.
-type replacerFunc func(field string) (string, error)
+type replacerFunc func(field string) string
 
-// templateReplacerFunc returns a func that takes a field that
-// and replaces the field with the rendered templ for each
-// submatch of re.
+// regexpReplacerFunc returns a replacerFunc that replaces
+// all matches and submatches in field with repl.
+func regexpReplacerFunc(re *regexp.Regexp, repl string) replacerFunc {
+	return func(field string) string {
+		return re.ReplaceAllString(field, repl)
+	}
+}
+
+// templateReplacerFunc returns a replacerFunc that replaces
+// the field with the rendered templ for each submatch of re.
 func templateReplacerFunc(re *regexp.Regexp, templ string) replacerFunc {
 	newTempl := convertTemplNames(templ)
-	// fmt.Println(newTempl)
+	debugln(newTempl)
 
 	t, err := template.New("template").Funcs(sprig.FuncMap()).Parse(newTempl)
 	if err != nil {
@@ -149,8 +138,9 @@ func templateReplacerFunc(re *regexp.Regexp, templ string) replacerFunc {
 		buf        = &bytes.Buffer{}
 	)
 
-	return func(field string) (string, error) {
+	return func(field string) string {
 		matches := re.FindAllStringSubmatch(field, -1)
+		debugln("matches:", matches)
 		for _, match := range matches {
 			for k := range submatchData {
 				submatchData[k] = "<no-value>"
@@ -159,13 +149,27 @@ func templateReplacerFunc(re *regexp.Regexp, templ string) replacerFunc {
 				name := fmt.Sprintf("%s%d", namePrefix, i)
 				submatchData[name] = value
 			}
+			debugln("submatchData:", submatchData)
 			buf.Reset()
 			err = t.Execute(buf, submatchData)
 			if err != nil {
-				return field, err
+				ExitWithError(err)
 			}
 			field = strings.Replace(field, match[0], buf.String(), 1)
 		}
-		return field, nil
+		return field
 	}
+}
+
+// match submatch-specifiers like $0, or its escaped
+// equivalent ${0}, submatching the number
+var reSubmatchToken = regexp.MustCompile(`\$\{?(\d+)\}?`)
+
+const templDataPrefix = ".Submatch_"
+
+// convertTemplNames replaces submatch specifiers with names
+// that can be called while executing a template,
+// e.g.:, $0 → .Submatch_0, ${4} → .Submatch_4.
+func convertTemplNames(templ string) (newTempl string) {
+	return reSubmatchToken.ReplaceAllString(templ, templDataPrefix+"$1")
 }
