@@ -4,6 +4,7 @@ import (
 	"flag"
 	"io"
 	"regexp"
+	"strconv"
 )
 
 type ReplaceSubcommand struct {
@@ -47,22 +48,39 @@ func (sub *ReplaceSubcommand) RunReplace(inputCsv *InputCsv, outputCsvWriter Out
 	}
 
 	// Get replace function
-	var replaceFunc func(string) string
 	if sub.caseInsensitive {
 		sub.regex = "(?i)" + sub.regex
 	}
-	re, err := regexp.Compile(sub.regex)
+	replaceFunc, err := regexReplaceFunc(sub.regex, sub.repl)
 	if err != nil {
 		ExitWithError(err)
-	}
-	replaceFunc = func(elem string) string {
-		return re.ReplaceAllString(elem, sub.repl)
 	}
 
 	ReplaceWithFunc(inputCsv, outputCsvWriter, columns, replaceFunc)
 }
 
-func ReplaceWithFunc(inputCsv *InputCsv, outputCsvWriter OutputCsvWriter, columns []string, replaceFunc func(string) string) {
+// replacerFunc is a func that returns elem modified by some
+// internal replacement process.
+type replacerFunc func(elem string) string
+
+func regexReplaceFunc(regex, repl string) (replacerFunc, error) {
+	re, err := regexp.Compile(regex)
+	if err != nil {
+		return nil, err
+	}
+	repl, err = strconv.Unquote(`"` + repl + `"`)
+	if err != nil {
+		return nil, err
+	}
+
+	f := func(elem string) string {
+		return re.ReplaceAllString(elem, repl)
+	}
+
+	return f, nil
+}
+
+func ReplaceWithFunc(inputCsv *InputCsv, outputCsvWriter OutputCsvWriter, columns []string, replaceFunc replacerFunc) {
 	// Read header to get column index and write.
 	header, err := inputCsv.Read()
 	if err != nil {
