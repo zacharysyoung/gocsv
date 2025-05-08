@@ -2,12 +2,49 @@ package cmd
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"errors"
 	"flag"
 	"fmt"
+	"regexp"
 	"strings"
 
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite"      // for sql interface
+	sqlite "modernc.org/sqlite" // for registering a user-defined function
 )
+
+func init() {
+	// Lifted from <https://gitlab.com/cznic/sqlite/-/blob/v1.37.0/func_test.go#L162>.
+	sqlite.MustRegisterDeterministicScalarFunction(
+		"regexp",
+		2,
+		func(ctx *sqlite.FunctionContext, args []driver.Value) (driver.Value, error) {
+			var s1 string
+			var s2 string
+
+			switch arg0 := args[0].(type) {
+			case string:
+				s1 = arg0
+			default:
+				return nil, errors.New("expected argv[0] to be text")
+			}
+
+			switch arg1 := args[1].(type) {
+			case string:
+				s2 = arg1
+			default:
+				return nil, errors.New("expected argv[1] to be text")
+			}
+
+			matched, err := regexp.MatchString(s1, s2)
+			if err != nil {
+				return nil, fmt.Errorf("bad regular expression: %q", err)
+			}
+
+			return matched, nil
+		},
+	)
+}
 
 type SqlSubcommand struct {
 	queryString string
