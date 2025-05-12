@@ -1,0 +1,3 @@
+Col, Type,   NULL_ct, Min, Max, Sum, Mean, Median, Std_dev, Unique_ct, Max_str_len, No_1_val, No_1_ct, No_2_val, No_2_ct, No_3_val, No_3_ct, No_4_val, No_4_ct, No_5_val, No_5_ct
+A,   int,          0,   1,   4,  10,  2.5,    2.0,    1.29,         4,            , 4,              1, 1,              1, 2,              1, 3,        1,       ,
+B,   string,       0,    ,    ,    ,     ,       ,        ,         3,           1, z,              2, x,              1, y,              1,  ,         ,       ,
