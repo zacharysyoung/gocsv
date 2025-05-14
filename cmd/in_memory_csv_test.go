@@ -3,109 +3,173 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/aotimme/gocsv/csv"
 )
 
-func TestStats(t *testing.T) {
-	var (
-		data = strings.TrimSpace(`
-A,B
-1,x
-2,y
-3,z
-4,z
-`)
+var (
+	hasSuffix = strings.HasSuffix
+	join      = func(s []string) string { return strings.Join(s, "\n") }
+	split     = func(s string) []string { return strings.Split(s, "\n") }
+	trim      = strings.TrimSpace
+)
 
-		want = strings.TrimSpace(`
+func TestPrintStats(t *testing.T) {
+	// find the "N most frequent values..." section of lines in
+	// printedStats, sort just the individual value-count lines
+	// with a simple string sort, return all the joined lines.
+	//
+	// TODO: remove once we've addressed the non-deterministic sorting of values with the same count
+	sortMostFrequentVals := func(printedStats string) string {
+		lines := split(trim(printedStats))
+		n, line := 0, ""
+		for n, line = range lines {
+			if hasSuffix(line, "most frequent values:") {
+				break
+			}
+		}
+		slices.Sort(lines[n+1:])
+		return join(lines)
+	}
+
+	testCases := []struct {
+		name string
+		col  []string // single column of values
+		want string   // put most-freq-vals in the desired order; the actual order will be ignored till we address the non-deterministic sorting of values with the same count
+	}{
+		{
+			"int",
+			[]string{"1", "2", "3", "3", "4", "4", "4"},
+			`
 1. A
   Type: int
   Number NULL: 0
   Min: 1
   Max: 4
-  Sum: 10
-  Mean: 2.500000
-  Median: 2.000000
-  Standard Deviation: 1.290994
+  Sum: 21
+  Mean: 3.000000
+  Median: 3.000000
+  Standard Deviation: 1.154701
   Unique values: 4
   4 most frequent values:
+      4: 3
+      3: 2
       1: 1
       2: 1
-      3: 1
-      4: 1
+`,
+		},
 
-2. B
+		{
+			"float",
+			[]string{"1.0", "2.0", "3.0", "3.0", "4.0", "4.0", "4.0"},
+			`
+			1. A
+  Type: float
+  Number NULL: 0
+  Min: 1.000000
+  Max: 4.000000
+  Sum: 21.000000
+  Mean: 3.000000
+  Median: 3.000000
+  Standard Deviation: 1.154701
+  Unique values: 4
+  4 most frequent values:
+      4.000000: 3
+      3.000000: 2
+      1.000000: 1
+      2.000000: 1
+`,
+		},
+
+		{
+			"bool",
+			[]string{"true", "true", "false", "false", "false"},
+			`
+1. A
+  Type: boolean
+  Number NULL: 0
+  Number TRUE: 2
+  Number FALSE: 3
+`,
+		},
+
+		{
+			"date",
+			[]string{"2000-01-01", "2000-01-02", "2000-01-03", "2000-01-03", "2000-01-04", "2000-01-04", "2000-01-04"},
+			`
+1. A
+  Type: date
+  Number NULL: 0
+  Min: 2000-01-01
+  Max: 2000-01-04
+  Unique values: 4
+  4 most frequent values:
+      2000-01-04: 3
+      2000-01-03: 2
+      2000-01-01: 1
+      2000-01-02: 1
+`,
+		},
+
+		{
+			"datetime",
+			[]string{"2000-01-01T00:00:00Z", "2000-01-02T00:00:00Z", "2000-01-03T00:00:00Z", "2000-01-03T00:00:00Z", "2000-01-04T00:00:00Z", "2000-01-04T00:00:00Z", "2000-01-04T00:00:00Z"},
+			`
+1. A
+  Type: datetime
+  Number NULL: 0
+  Min: 2000-01-01T00:00:00Z
+  Max: 2000-01-04T00:00:00Z
+  Unique values: 4
+  4 most frequent values:
+      2000-01-04T00:00:00Z: 3
+      2000-01-03T00:00:00Z: 2
+      2000-01-01T00:00:00Z: 1
+      2000-01-02T00:00:00Z: 1
+`,
+		},
+
+		{
+			"string",
+			[]string{"a", "bb", "ccc", "ccc", "dddd", "dddd", "dddd"},
+			`
+1. A
   Type: string
   Number NULL: 0
-  Unique values: 3
-  Max length: 1
-  3 most frequent values:
-      z: 2
-      x: 1
-      y: 1
-`)
-	)
-
-	imc := NewInMemoryCsvFromInputCsv(&InputCsv{
-		reader: csv.NewReader(strings.NewReader(data)),
-	})
-
-	var (
-		buf = &bytes.Buffer{} // substitute for stdout, which imc.PrintStats uses
-
-		bufA = imc.GetPrintStatsForColumn(0)
-		bufB = imc.GetPrintStatsForColumn(1)
-	)
-
-	fmt.Fprintln(buf, bufA.String())
-	fmt.Fprintln(buf, bufB.String())
-
-	got := strings.TrimSpace(buf.String())
-
-	if got != want {
-		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+  Unique values: 4
+  Max length: 4
+  4 most frequent values:
+      dddd: 3
+      ccc: 2
+      a: 1
+      bb: 1
+`,
+		},
 	}
-}
 
-// Fails intermittently because the order of the most frequent
-// values is derived from the keys in a map, which have
-// non-deterministic ordering.
-func TestStats_MostFrequentValues(t *testing.T) {
-	var (
-		data = strings.TrimSpace(`
-A
-1
-2
-3
-`)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			imc := NewInMemoryCsvFromInputCsv(
+				&InputCsv{
+					reader: csv.NewReader(strings.NewReader("A\n" + join(tc.col))),
+				},
+			)
+			buf_A := imc.GetPrintStatsForColumn(0)
 
-		want = strings.TrimSpace(`
-3 most frequent values:
-      1: 1
-      2: 1
-      3: 1
-`)
-	)
+			buf := &bytes.Buffer{} // substitute for stdout, which imc.PrintStats uses
+			fmt.Fprintln(buf, buf_A.String())
 
-	imc := NewInMemoryCsvFromInputCsv(&InputCsv{
-		reader: csv.NewReader(strings.NewReader(data)),
-	})
+			got := sortMostFrequentVals(buf.String())
 
-	var (
-		buf = &bytes.Buffer{} // substitute for stdout, which imc.PrintStats uses
+			// TODO: remove sorting once we've addressed the non-deterministic sorting of values with the same count
+			want := sortMostFrequentVals(tc.want)
 
-		bufA = imc.GetPrintStatsForColumn(0)
-	)
-
-	fmt.Fprintln(buf, bufA.String())
-
-	// separate out just the "N most frequent values" part
-	parts := strings.Split(buf.String(), "Unique values: 3")
-	got := strings.TrimSpace(parts[1])
-
-	if got != want {
-		t.Errorf("\ngot:\n%s\nwant:\n%s", got, want)
+			if got != want {
+				t.Errorf("\ngot:\n%s\nwant:\n%s", got, want)
+			}
+		})
 	}
 }
