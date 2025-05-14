@@ -35,16 +35,28 @@ func TestPrintStats(t *testing.T) {
 		return join(lines)
 	}
 
+	const header = "Col_A"
+
 	testCases := []struct {
 		name string
 		col  []string // single column of values
 		want string   // put most-freq-vals in the desired order; the actual order will be ignored till we address the non-deterministic sorting of values with the same count
 	}{
 		{
+			"null",
+			[]string{"", "", ""},
+			`
+1. Col_A
+  Type: null
+  Number NULL: 3
+`,
+		},
+
+		{
 			"int",
 			[]string{"1", "2", "3", "3", "4", "4", "4"},
 			`
-1. A
+1. Col_A
   Type: int
   Number NULL: 0
   Min: 1
@@ -66,7 +78,7 @@ func TestPrintStats(t *testing.T) {
 			"float",
 			[]string{"1.0", "2.0", "3.0", "3.0", "4.0", "4.0", "4.0"},
 			`
-			1. A
+			1. Col_A
   Type: float
   Number NULL: 0
   Min: 1.000000
@@ -88,7 +100,7 @@ func TestPrintStats(t *testing.T) {
 			"bool",
 			[]string{"true", "true", "false", "false", "false"},
 			`
-1. A
+1. Col_A
   Type: boolean
   Number NULL: 0
   Number TRUE: 2
@@ -100,7 +112,7 @@ func TestPrintStats(t *testing.T) {
 			"date",
 			[]string{"2000-01-01", "2000-01-02", "2000-01-03", "2000-01-03", "2000-01-04", "2000-01-04", "2000-01-04"},
 			`
-1. A
+1. Col_A
   Type: date
   Number NULL: 0
   Min: 2000-01-01
@@ -118,7 +130,7 @@ func TestPrintStats(t *testing.T) {
 			"datetime",
 			[]string{"2000-01-01T00:00:00Z", "2000-01-02T00:00:00Z", "2000-01-03T00:00:00Z", "2000-01-03T00:00:00Z", "2000-01-04T00:00:00Z", "2000-01-04T00:00:00Z", "2000-01-04T00:00:00Z"},
 			`
-1. A
+1. Col_A
   Type: datetime
   Number NULL: 0
   Min: 2000-01-01T00:00:00Z
@@ -136,7 +148,7 @@ func TestPrintStats(t *testing.T) {
 			"string",
 			[]string{"a", "bb", "ccc", "ccc", "dddd", "dddd", "dddd"},
 			`
-1. A
+1. Col_A
   Type: string
   Number NULL: 0
   Unique values: 4
@@ -154,7 +166,7 @@ func TestPrintStats(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			imc := NewInMemoryCsvFromInputCsv(
 				&InputCsv{
-					reader: csv.NewReader(strings.NewReader("A\n" + join(tc.col))),
+					reader: csv.NewReader(strings.NewReader(header + "\n" + join(tc.col) + "\n")),
 				},
 			)
 			buf_A := imc.GetPrintStatsForColumn(0)
