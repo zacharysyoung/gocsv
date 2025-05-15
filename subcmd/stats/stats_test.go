@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestStats_boolean(t *testing.T) {
-	got := booleanStats([]bool{true, true, false, true})
+func TestStats_bool(t *testing.T) {
+	got := boolStats([]bool{true, true, false, true})
 
 	want := boolCounts{true: 3, false: 1}
 

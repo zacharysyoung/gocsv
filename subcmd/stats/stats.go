@@ -6,12 +6,14 @@ import (
 	"slices"
 )
 
+// -- bool --
+
 type boolCounts struct {
 	true  int
 	false int
 }
 
-func booleanStats(bools []bool) (valueCounts boolCounts) {
+func boolStats(bools []bool) (valueCounts boolCounts) {
 	for _, b := range bools {
 		switch b {
 		case true:
@@ -22,6 +24,8 @@ func booleanStats(bools []bool) (valueCounts boolCounts) {
 	}
 	return valueCounts
 }
+
+// -- numeric --
 
 type floatCount = struct {
 	value float64
@@ -134,6 +138,8 @@ func numericStats[Num numeric](nums []Num) (
 		valueCounts
 }
 
+// -- string --
+
 type stringCount struct {
 	s     string
 	count int
@@ -170,3 +176,6 @@ func stringStats(strings []string) (
 		uniqueCount,
 		valueCounts
 }
+
+// -- time --
+// TODO
