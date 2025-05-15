@@ -414,7 +414,8 @@ func Test_getNumericStats(t *testing.T) {
 			},
 		}
 
-		const format = `
+		for _, tc := range testCases {
+			assertNumericStats(`
 for %v:
   min:    %d; %d
   median: %.14f; %.14f
@@ -424,12 +425,7 @@ for %v:
   stdDev: %.14f; %.14f
   unique: %d; %d
   counts: %v; %v
-`
-
-		for _, tc := range testCases {
-			assertNumericStats(
-				t,
-				format,
+`,
 
 				tc.nums,
 				tc.min,
@@ -439,7 +435,9 @@ for %v:
 				tc.mean,
 				tc.stdDev,
 				tc.uniqueCount,
-				tc.valueCounts)
+				tc.valueCounts,
+
+				t)
 		}
 	})
 
@@ -523,7 +521,8 @@ for %v:
 			},
 		}
 
-		const format = `
+		for _, tc := range testCases {
+			assertNumericStats(`
 for %v:
   min:    %.14f; %.14f
   median: %.14f; %.14f
@@ -533,12 +532,7 @@ for %v:
   stdDev: %.14f; %.14f
   unique: %d; %d
   counts: %v; %v
-`
-
-		for _, tc := range testCases {
-			assertNumericStats(
-				t,
-				format,
+`,
 
 				tc.nums,
 				tc.min,
@@ -548,17 +542,17 @@ for %v:
 				tc.mean,
 				tc.stdDev,
 				tc.uniqueCount,
-				tc.valueCounts)
+				tc.valueCounts,
+
+				t)
 		}
 	})
 }
 
 func assertNumericStats[Num numeric](
-	t *testing.T,
 	format string,
 
 	nums []Num,
-
 	min Num,
 	median float64,
 	max Num,
@@ -569,7 +563,9 @@ func assertNumericStats[Num numeric](
 	valueCounts []struct {
 		value Num
 		count int
-	}) {
+	},
+
+	t *testing.T) {
 
 	t.Helper()
 
