@@ -99,7 +99,7 @@ func TestStats_numeric(t *testing.T) {
 					{2e17, 1},
 				},
 			},
-			// e18, biggest exponent on my machine the compiler allows
+			// e18, overflows, biggest exponent on my machine the compiler allows
 			{
 				nums:        []int{1e18, 2e18, 3e18, 3e18, 4e18, 4e18, 4e18},
 				min:         1e18,
@@ -192,12 +192,12 @@ for %v:
 			// e22, biggest exponent on my machine before overflow
 			{
 				nums:        []float64{1e22, 2e22, 3e22, 3e22, 4e22, 4e22, 4e22},
-				min:         10_000_000_000_000_000_000_000,
-				median:      30_000_000_000_000_000_000_000,
-				max:         40_000_000_000_000_000_000_000,
-				sum:         210_000_000_000_000_012_582_912,
-				mean:        30_000_000_000_000_000_000_000,
-				stdDev:      11_547_005_383_792_515_874_816,
+				min:         10000000000000000000000,
+				median:      30000000000000000000000,
+				max:         40000000000000000000000,
+				sum:         210000000000000012582912,
+				mean:        30000000000000000000000,
+				stdDev:      11_547_005_383_792_515_874_816, // WolframAlpha computed 11_547_005_383_792_516_841_623
 				uniqueCount: 4,
 				valueCounts: []floatCount{
 					{4e22, 3},
@@ -206,7 +206,7 @@ for %v:
 					{2e22, 1},
 				},
 			},
-			// e307, biggest exponent on my machine the compiler allows
+			// e307, overflows, biggest exponent on my machine the compiler allows
 			{
 				nums:        []float64{1e307, 2e307, 3e307, 3e307, 4e307, 4e307, 4e307},
 				min:         9999999999999999860310597602564577717002641838126363875249660735883565852672743849064846414228960666786379280392654615393353172850252103336275952370615397010730691664689375178569039851073146339641623266071126720011020169553304018596457812688561947201171488461172921822139066929851282122002676667750021070848.0,
