@@ -1,9 +1,27 @@
 package stats
 
 import (
+	"cmp"
 	"math"
 	"slices"
 )
+
+type boolCounts struct {
+	true  int
+	false int
+}
+
+func booleanStats(bools []bool) (valueCounts boolCounts) {
+	for _, b := range bools {
+		switch b {
+		case true:
+			valueCounts.true++
+		case false:
+			valueCounts.false++
+		}
+	}
+	return valueCounts
+}
 
 type floatCount = struct {
 	value float64
@@ -52,6 +70,12 @@ func numericStats[Num numeric](nums []Num) (
 		count int
 	}) {
 
+	// internal type alias
+	type _valueCount = struct {
+		value Num
+		count int
+	}
+
 	n := len(nums)
 
 	// min, median, max
@@ -88,23 +112,14 @@ func numericStats[Num numeric](nums []Num) (
 	uniqueCount = len(m)
 
 	// convert raw map to properly sorted slice of value counts
-	valueCounts = make([]struct {
-		value Num
-		count int
-	}, 0, len(m))
+	valueCounts = make([]_valueCount, 0, len(m))
 	for val, ct := range m {
-		valueCounts = append(valueCounts, struct {
-			value Num
-			count int
-		}{val, ct})
+		valueCounts = append(valueCounts, _valueCount{val, ct})
 	}
-	slices.SortFunc(valueCounts, func(a, b struct {
-		value Num
-		count int
-	}) int {
+	slices.SortFunc(valueCounts, func(a, b _valueCount) int {
 		// count (descending); break tie on value (ascending)
 		if a.count == b.count {
-			return int(a.value - b.value)
+			return cmp.Compare(a.value, b.value)
 		}
 		return b.count - a.count
 	})
@@ -115,6 +130,43 @@ func numericStats[Num numeric](nums []Num) (
 		sum,
 		mean,
 		stdDev,
+		uniqueCount,
+		valueCounts
+}
+
+type stringCount struct {
+	s     string
+	count int
+}
+
+func stringStats(strings []string) (
+	maxLen int,
+	uniqueCount int,
+	valueCounts []stringCount,
+) {
+	m := make(map[string]int)
+	for _, s := range strings {
+		maxLen = max(len(s), maxLen)
+		m[s]++
+	}
+
+	// uniqueCount
+	uniqueCount = len(m)
+
+	// convert raw map to properly sorted slice of value counts
+	valueCounts = make([]stringCount, 0, len(m))
+	for s, ct := range m {
+		valueCounts = append(valueCounts, stringCount{s, ct})
+	}
+	slices.SortFunc(valueCounts, func(a, b stringCount) int {
+		// count (descending); break tie on value (ascending)
+		if a.count == b.count {
+			return cmp.Compare(a.s, b.s)
+		}
+		return b.count - a.count
+	})
+
+	return maxLen,
 		uniqueCount,
 		valueCounts
 }

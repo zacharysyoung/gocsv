@@ -6,6 +6,16 @@ import (
 	"testing"
 )
 
+func TestStats_boolean(t *testing.T) {
+	got := booleanStats([]bool{true, true, false, true})
+
+	want := boolCounts{true: 3, false: 1}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("\n got: %v\nwant: %v\n", got, want)
+	}
+}
+
 var (
 	posInf = math.Inf(0)
 
@@ -297,5 +307,39 @@ func assertNumericStats[Num numeric](
 			_uniqueCount, uniqueCount,
 			_valueCounts, valueCounts,
 		)
+	}
+}
+
+func TestStats_string(t *testing.T) {
+	strings := []string{"foo", "baz", "baker", "bar", "foo"}
+
+	_maxLen, _uniqueCount, _valueCounts := stringStats(strings)
+
+	// wants
+	var (
+		maxLen      = 5
+		uniqueCount = 4
+		valueCounts = []stringCount{
+			{s: "foo", count: 2},
+			{s: "baker", count: 1},
+			{s: "bar", count: 1},
+			{s: "baz", count: 1},
+		}
+	)
+
+	if _maxLen != maxLen ||
+		_uniqueCount != uniqueCount ||
+		!reflect.DeepEqual(_valueCounts, valueCounts) {
+		t.Errorf(`
+            for %v:
+              maxLen:      %d; %d
+              uniqueCount: %d; %d
+              valueCounts: %v; %v`,
+
+			strings,
+
+			_maxLen, maxLen,
+			_uniqueCount, uniqueCount,
+			_valueCounts, valueCounts)
 	}
 }
