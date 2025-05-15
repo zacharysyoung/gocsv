@@ -39,7 +39,7 @@ type intStats struct {
 
 type numeric interface{ float64 | int }
 
-func getNumericStats[Num numeric](nums []Num) (
+func numericStats[Num numeric](nums []Num) (
 	minN Num,
 	medianN float64,
 	maxN Num,

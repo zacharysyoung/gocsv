@@ -21,7 +21,7 @@ var (
 	}
 )
 
-func Test_getNumericStats(t *testing.T) {
+func TestStats_numeric(t *testing.T) {
 	t.Run("ints", func(t *testing.T) {
 		testCases := []struct {
 			nums []int
@@ -273,7 +273,7 @@ func assertNumericStats[Num numeric](
 
 	t.Helper()
 
-	_min, _median, _max, _sum, _mean, _stdDev, _uniqueCount, _valueCounts := getNumericStats(nums)
+	_min, _median, _max, _sum, _mean, _stdDev, _uniqueCount, _valueCounts := numericStats(nums)
 
 	if _min != min ||
 		!equal(_median, median) ||
