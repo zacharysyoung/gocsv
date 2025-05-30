@@ -4,6 +4,7 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestStats_bool(t *testing.T) {
@@ -342,4 +343,82 @@ func TestStats_string(t *testing.T) {
 			_uniqueCount, uniqueCount,
 			_valueCounts, valueCounts)
 	}
+}
+
+func TestOrdered(t *testing.T) {
+	t.Run("Floats", func(t *testing.T) {
+		floats := []FloatCount{
+			{value: 2.2, count: 1},
+			{value: 3.3, count: 1},
+			{value: 1.1, count: 1},
+			{value: 4.4, count: 2},
+		}
+
+		want := []FloatCount{
+			{value: 4.4, count: 2},
+			{value: 1.1, count: 1},
+			{value: 2.2, count: 1},
+			{value: 3.3, count: 1},
+		}
+
+		got := sortCounts(floats)
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("\n got:\n%v\nwant:\n%v", got, want)
+		}
+	})
+	t.Run("Strings", func(t *testing.T) {
+		strings := []StringCount{
+			{value: "baz", count: 1},
+			{value: "baker", count: 1},
+			{value: "bar", count: 1},
+			{value: "foo", count: 2},
+		}
+
+		want := []StringCount{
+			{value: "foo", count: 2},
+			{value: "baker", count: 1},
+			{value: "bar", count: 1},
+			{value: "baz", count: 1},
+		}
+
+		got := sortCounts(strings)
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("\n got:\n%v\nwant:\n%v", got, want)
+		}
+	})
+	t.Run("Times", func(t *testing.T) {
+		const day = 24 * time.Hour
+
+		jan1 := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+		jan2 := jan1.Add(1 * day)
+		jan3 := jan1.Add(2 * day)
+		jan4 := jan1.Add(3 * day)
+
+		t1 := Time(jan1)
+		t2 := Time(jan2)
+		t3 := Time(jan3)
+		t4 := Time(jan4)
+
+		times := []TimeCount{
+			{value: t1, count: 1},
+			{value: t2, count: 1},
+			{value: t3, count: 1},
+			{value: t4, count: 2},
+		}
+
+		want := []TimeCount{
+			{value: t4, count: 2},
+			{value: t1, count: 1},
+			{value: t2, count: 1},
+			{value: t3, count: 1},
+		}
+
+		got := sortCounts(times)
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("\n got:\n%v\nwant:\n%v", got, want)
+		}
+	})
 }

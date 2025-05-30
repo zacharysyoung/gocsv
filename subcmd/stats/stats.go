@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"math"
 	"slices"
+	"time"
 )
 
 // -- bool --
@@ -179,3 +180,57 @@ func stringStats(strings []string) (
 
 // -- time --
 // TODO
+
+type (
+	Float  float64
+	Int    int
+	String string
+	Time   time.Time
+
+	Ordered[T any] interface {
+		Compare(T) int
+	}
+)
+
+func (x Float) Compare(y Float) int   { return cmp.Compare(x, y) }
+func (x Int) Compare(y Int) int       { return cmp.Compare(x, y) }
+func (x String) Compare(y String) int { return cmp.Compare(x, y) }
+func (x Time) Compare(y Time) int     { return time.Time(x).Compare(time.Time(y)) }
+
+type FloatCount = struct {
+	value Float
+	count int
+}
+type IntCount = struct {
+	value Int
+	count int
+}
+type StringCount = struct {
+	value String
+	count int
+}
+type TimeCount = struct {
+	value Time
+	count int
+}
+
+func sortCounts[T Ordered[T]](valueCounts []struct {
+	value T
+	count int
+}) []struct {
+	value T
+	count int
+} {
+	slices.SortFunc(valueCounts, func(a, b struct {
+		value T
+		count int
+	}) int {
+		// count (descending); break tie on value (ascending)
+		if a.count == b.count {
+			return a.value.Compare(b.value)
+		}
+		return b.count - a.count
+	})
+
+	return valueCounts
+}
