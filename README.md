@@ -39,7 +39,7 @@ A
 For cmd/cli/testdata/view.txt, the following will run the test view/markdown, interpreting the second file as command-line args:
 
 ```none
--- want --
+-- in --
 Col1, Col2,    Col3$
    1, longish, a   $
    2, short,   bb  $
