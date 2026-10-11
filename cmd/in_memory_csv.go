@@ -5,8 +5,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"iter"
+	"maps"
 	"math"
 	"math/rand"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -372,6 +375,115 @@ func (ics *IntColumnStats) CalculateMedian() {
 		ics.median = (float64(sortedArray[arrayLen/2-1]) + float64(sortedArray[arrayLen/2])) / 2.0
 	} else {
 		ics.median = float64(sortedArray[arrayLen/2])
+	}
+}
+
+func calculateMin[T int64 | float64](values []T) T {
+	switch len(values) {
+	case 0, 1:
+		panic("need more than 1 value for comparison")
+	case 2:
+		return min(values[0], values[1])
+	default:
+		minX := min(values[0], values[1])
+		for _, x := range values[2:] {
+			minX = min(minX, x)
+		}
+		return minX
+	}
+}
+
+func calculateMax[T int64 | float64](values []T) T {
+	switch len(values) {
+	case 0, 1:
+		panic("need more than 1 value for comparison")
+	case 2:
+		return max(values[0], values[1])
+	default:
+		maxX := max(values[0], values[1])
+		for _, x := range values[2:] {
+			maxX = max(maxX, x)
+		}
+		return maxX
+	}
+}
+
+func calculateSum[T int64 | float64](values []T) T {
+	var sum T
+	for _, x := range values {
+		sum += x
+	}
+	return sum
+}
+
+func calculateMean[T int64 | float64](values []T) float64 {
+	return float64(calculateSum(values)) / float64(len(values))
+}
+
+func calculateMedian[T int64 | float64](values []T) float64 {
+	sorted := slices.Sorted(slices.Values(values))
+	switch n := len(sorted); {
+	default:
+		return float64(sorted[n/2])
+	case n%2 == 0:
+		return calculateMean(sorted[n/2-1 : n/2+1])
+	}
+}
+
+// Calculate the sample standard deviation (n-1); as oppossed to
+// standard deviation (n).
+func calculateStdDev[T int64 | float64](values []T) float64 {
+	mean := calculateMean(values)
+	n := len(values)
+
+	sum := 0.0
+	for _, x := range values {
+		deviation := float64(x) - mean
+		sum += deviation * deviation
+	}
+
+	variance := sum / float64(n-1)
+
+	return math.Sqrt(variance)
+}
+
+func calculateCounts[E comparable](values []E) iter.Seq2[E, int] {
+	counts := map[E]int{}
+	for _, x := range values {
+		counts[x] += 1
+	}
+	return reversedSortedSeq2(counts)
+}
+
+// reversedSortedSeq2 converts map[K]int{"b":1,"a":2,"c":3} -> Seq2{{"c",3},{"a",2},{"b",1}}
+func reversedSortedSeq2[K comparable, V int](counts map[K]V) iter.Seq2[K, V] {
+	type pair struct {
+		key   K
+		count V
+	}
+
+	var pairs []pair
+
+	for k, v := range maps.All(counts) {
+		pairs = append(pairs, pair{k, v})
+	}
+
+	slices.SortFunc(pairs, func(a, b pair) int {
+		if b.count > a.count {
+			return 1
+		}
+		if b.count < a.count {
+			return -1
+		}
+		return 0
+	})
+
+	return func(yield func(K, V) bool) {
+		for _, pair := range pairs {
+			if !yield(pair.key, pair.count) {
+				return
+			}
+		}
 	}
 }
 
