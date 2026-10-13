@@ -117,10 +117,10 @@ func TestStatsMedian(t *testing.T) {
 
 func TestStatsStdDev(t *testing.T) {
 	values := []int64{2, 3, 4, 5}
-	want := 1.29
+	want := 1.291
 	got := calculateStdDev(values)
-	if math.Abs(got-want) > 0.001 {
-		t.Errorf("for values %v, got %.2f; want %.2f", values, got, want)
+	if !mostlyEqual(got, want) {
+		t.Errorf("for values %v, got %.3f; want %.3f", values, got, want)
 	}
 }
 
