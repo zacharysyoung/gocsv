@@ -514,16 +514,6 @@ func (scs *StringColumnStats) CalculateMaxLength() {
 	}
 }
 
-// Inferred Types
-type IT interface {
-	bool | float64 | int64 | string | time.Time
-}
-
-type valueCount[K IT] struct {
-	value K
-	count int
-}
-
 func calculateMin[E int64 | float64](values []E) E {
 	switch len(values) {
 	case 0, 1:
@@ -591,6 +581,16 @@ func calculateStdDev[E int64 | float64](values []E) float64 {
 	variance := sum / float64(n-1)
 
 	return math.Sqrt(variance)
+}
+
+// Inferred Types
+type IT interface {
+	bool | float64 | int64 | string | time.Time
+}
+
+type valueCount[K IT] struct {
+	value K
+	count int
 }
 
 // getValueCounts iterates and counts occurences of values,
