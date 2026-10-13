@@ -3,14 +3,13 @@ package cmd
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"fmt"
 	"io"
-	"iter"
 	"maps"
 	"math"
 	"math/rand"
 	"slices"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -312,7 +311,7 @@ type IntColumnStats struct {
 	array               []int64
 	min, max, sum       int64
 	mean, median, stdev float64
-	valueCounts         []IntValueCount
+	valueCounts         []valueCount[int64]
 }
 
 func NewIntColumnsStats(intArray []int64) *IntColumnStats {
@@ -322,209 +321,14 @@ func NewIntColumnsStats(intArray []int64) *IntColumnStats {
 }
 
 func (ics *IntColumnStats) CalculateAllStats() {
-	ics.CalculateMin()
-	ics.CalculateMax()
-	ics.CalculateSum()
-	ics.CalculateMean()
-	ics.CalculateMedian()
-	ics.CalculateStdDev()
-	ics.CalculateValueCounts()
+	ics.min = calculateMin(ics.array)
+	ics.max = calculateMax(ics.array)
+	ics.sum = calculateSum(ics.array)
+	ics.mean = calculateMean(ics.array)
+	ics.median = calculateMedian(ics.array)
+	ics.stdev = calculateStdDev(ics.array)
+	ics.valueCounts = getValueCounts(ics.array, cmp.Compare)
 }
-
-func (ics *IntColumnStats) CalculateMin() {
-	ics.min = math.MaxInt64
-	for _, intVal := range ics.array {
-		if intVal < ics.min {
-			ics.min = intVal
-		}
-	}
-}
-
-func (ics *IntColumnStats) CalculateMax() {
-	ics.max = math.MinInt64
-	for _, intVal := range ics.array {
-		if intVal > ics.max {
-			ics.max = intVal
-		}
-	}
-}
-
-func (ics *IntColumnStats) CalculateSum() {
-	ics.sum = 0
-	for _, intVal := range ics.array {
-		ics.sum += intVal
-	}
-}
-
-func (ics *IntColumnStats) CalculateMean() {
-	ics.mean = float64(ics.sum) / float64(len(ics.array))
-}
-
-type Int64Array []int64
-
-func (a Int64Array) Len() int           { return len(a) }
-func (a Int64Array) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a Int64Array) Less(i, j int) bool { return a[i] < a[j] }
-
-func (ics *IntColumnStats) CalculateMedian() {
-	arrayLen := len(ics.array)
-	sortedArray := make([]int64, arrayLen)
-	copy(sortedArray, ics.array)
-	sort.Sort(Int64Array(sortedArray))
-	if len(sortedArray)%2 == 0 {
-		ics.median = (float64(sortedArray[arrayLen/2-1]) + float64(sortedArray[arrayLen/2])) / 2.0
-	} else {
-		ics.median = float64(sortedArray[arrayLen/2])
-	}
-}
-
-func calculateMin[T int64 | float64](values []T) T {
-	switch len(values) {
-	case 0, 1:
-		panic("need more than 1 value for comparison")
-	case 2:
-		return min(values[0], values[1])
-	default:
-		minX := min(values[0], values[1])
-		for _, x := range values[2:] {
-			minX = min(minX, x)
-		}
-		return minX
-	}
-}
-
-func calculateMax[T int64 | float64](values []T) T {
-	switch len(values) {
-	case 0, 1:
-		panic("need more than 1 value for comparison")
-	case 2:
-		return max(values[0], values[1])
-	default:
-		maxX := max(values[0], values[1])
-		for _, x := range values[2:] {
-			maxX = max(maxX, x)
-		}
-		return maxX
-	}
-}
-
-func calculateSum[T int64 | float64](values []T) T {
-	var sum T
-	for _, x := range values {
-		sum += x
-	}
-	return sum
-}
-
-func calculateMean[T int64 | float64](values []T) float64 {
-	return float64(calculateSum(values)) / float64(len(values))
-}
-
-func calculateMedian[T int64 | float64](values []T) float64 {
-	sorted := slices.Sorted(slices.Values(values))
-	switch n := len(sorted); {
-	default:
-		return float64(sorted[n/2])
-	case n%2 == 0:
-		return calculateMean(sorted[n/2-1 : n/2+1])
-	}
-}
-
-// Calculate the sample standard deviation (n-1); as oppossed to
-// standard deviation (n).
-func calculateStdDev[T int64 | float64](values []T) float64 {
-	mean := calculateMean(values)
-	n := len(values)
-
-	sum := 0.0
-	for _, x := range values {
-		deviation := float64(x) - mean
-		sum += deviation * deviation
-	}
-
-	variance := sum / float64(n-1)
-
-	return math.Sqrt(variance)
-}
-
-func calculateCounts[E comparable](values []E) iter.Seq2[E, int] {
-	counts := map[E]int{}
-	for _, x := range values {
-		counts[x] += 1
-	}
-	return reversedSortedSeq2(counts)
-}
-
-// reversedSortedSeq2 converts map[K]int{"b":1,"a":2,"c":3} -> Seq2{{"c",3},{"a",2},{"b",1}}
-func reversedSortedSeq2[K comparable, V int](counts map[K]V) iter.Seq2[K, V] {
-	type pair struct {
-		key   K
-		count V
-	}
-
-	var pairs []pair
-
-	for k, v := range maps.All(counts) {
-		pairs = append(pairs, pair{k, v})
-	}
-
-	slices.SortFunc(pairs, func(a, b pair) int {
-		if b.count > a.count {
-			return 1
-		}
-		if b.count < a.count {
-			return -1
-		}
-		return 0
-	})
-
-	return func(yield func(K, V) bool) {
-		for _, pair := range pairs {
-			if !yield(pair.key, pair.count) {
-				return
-			}
-		}
-	}
-}
-
-func (ics *IntColumnStats) CalculateStdDev() {
-	sum := 0.0
-	for _, intVal := range ics.array {
-		elem := float64(intVal) - ics.mean
-		sum += elem * elem
-	}
-	ics.stdev = math.Sqrt(sum / float64(len(ics.array)-1))
-}
-
-func (ics *IntColumnStats) CalculateValueCounts() {
-	valueCountsMap := make(map[int64]int)
-	for _, intVal := range ics.array {
-		count, ok := valueCountsMap[intVal]
-		if ok {
-			valueCountsMap[intVal] = count + 1
-		} else {
-			valueCountsMap[intVal] = 1
-		}
-	}
-	ics.valueCounts = make([]IntValueCount, len(valueCountsMap))
-	i := 0
-	for value, count := range valueCountsMap {
-		ics.valueCounts[i] = IntValueCount{value, count}
-		i++
-	}
-	sort.Sort(sort.Reverse(IntValueCountByCount(ics.valueCounts)))
-}
-
-type IntValueCount struct {
-	value int64
-	count int
-}
-
-type IntValueCountByCount []IntValueCount
-
-func (a IntValueCountByCount) Len() int           { return len(a) }
-func (a IntValueCountByCount) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a IntValueCountByCount) Less(i, j int) bool { return a[i].count < a[j].count }
 
 func (imc *InMemoryCsv) FprintStatsForColumnAsFloat(w io.Writer, columnIndex int) {
 	numNulls := imc.CountNullsInColumn(columnIndex)
@@ -560,7 +364,7 @@ type FloatColumnStats struct {
 	array               []float64
 	min, max, sum       float64
 	mean, median, stdev float64
-	valueCounts         []FloatValueCount
+	valueCounts         []valueCount[float64]
 }
 
 func NewFloatColumnsStats(floatArray []float64) *FloatColumnStats {
@@ -570,94 +374,14 @@ func NewFloatColumnsStats(floatArray []float64) *FloatColumnStats {
 }
 
 func (fcs *FloatColumnStats) CalculateAllStats() {
-	fcs.CalculateMin()
-	fcs.CalculateMax()
-	fcs.CalculateSum()
-	fcs.CalculateMean()
-	fcs.CalculateMedian()
-	fcs.CalculateStdDev()
-	fcs.CalculateValueCounts()
+	fcs.min = calculateMin(fcs.array)
+	fcs.max = calculateMax(fcs.array)
+	fcs.sum = calculateSum(fcs.array)
+	fcs.mean = calculateMean(fcs.array)
+	fcs.median = calculateMedian(fcs.array)
+	fcs.stdev = calculateStdDev(fcs.array)
+	fcs.valueCounts = getValueCounts(fcs.array, cmp.Compare)
 }
-
-func (fcs *FloatColumnStats) CalculateMin() {
-	fcs.min = math.Inf(1)
-	for _, floatVal := range fcs.array {
-		if floatVal < fcs.min {
-			fcs.min = floatVal
-		}
-	}
-}
-
-func (fcs *FloatColumnStats) CalculateMax() {
-	fcs.max = math.Inf(-1)
-	for _, floatVal := range fcs.array {
-		if floatVal > fcs.max {
-			fcs.max = floatVal
-		}
-	}
-}
-
-func (fcs *FloatColumnStats) CalculateSum() {
-	fcs.sum = 0.0
-	for _, floatVal := range fcs.array {
-		fcs.sum += floatVal
-	}
-}
-
-func (fcs *FloatColumnStats) CalculateMean() {
-	fcs.mean = fcs.sum / float64(len(fcs.array))
-}
-
-func (fcs *FloatColumnStats) CalculateMedian() {
-	arrayLen := len(fcs.array)
-	sortedArray := make([]float64, arrayLen)
-	copy(sortedArray, fcs.array)
-	sort.Float64s(sortedArray)
-	if len(sortedArray)%2 == 0 {
-		fcs.median = (float64(sortedArray[arrayLen/2-1]) + float64(sortedArray[arrayLen/2])) / 2.0
-	} else {
-		fcs.median = float64(sortedArray[arrayLen/2])
-	}
-}
-
-func (fcs *FloatColumnStats) CalculateStdDev() {
-	sum := 0.0
-	for _, floatVal := range fcs.array {
-		elem := float64(floatVal) - fcs.mean
-		sum += elem * elem
-	}
-	fcs.stdev = math.Sqrt(sum / float64(len(fcs.array)-1))
-}
-
-func (fcs *FloatColumnStats) CalculateValueCounts() {
-	valueCountsMap := make(map[float64]int)
-	for _, floatVal := range fcs.array {
-		count, ok := valueCountsMap[floatVal]
-		if ok {
-			valueCountsMap[floatVal] = count + 1
-		} else {
-			valueCountsMap[floatVal] = 1
-		}
-	}
-	fcs.valueCounts = make([]FloatValueCount, len(valueCountsMap))
-	i := 0
-	for value, count := range valueCountsMap {
-		fcs.valueCounts[i] = FloatValueCount{value, count}
-		i++
-	}
-	sort.Sort(sort.Reverse(FloatValueCountByCount(fcs.valueCounts)))
-}
-
-type FloatValueCount struct {
-	value float64
-	count int
-}
-
-type FloatValueCountByCount []FloatValueCount
-
-func (a FloatValueCountByCount) Len() int           { return len(a) }
-func (a FloatValueCountByCount) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a FloatValueCountByCount) Less(i, j int) bool { return a[i].count < a[j].count }
 
 func (imc *InMemoryCsv) FprintStatsForColumnAsBoolean(w io.Writer, columnIndex int) {
 	numTrue := 0
@@ -706,7 +430,7 @@ func (imc *InMemoryCsv) FprintStatsForColumnAsDatetimeWithFormat(w io.Writer, co
 type DateColumnStats struct {
 	array       []time.Time
 	min, max    time.Time
-	valueCounts []StringValueCount
+	valueCounts []valueCount[time.Time]
 	format      string
 }
 
@@ -720,7 +444,7 @@ func NewDateColumnsStats(dateArray []time.Time, format string) *DateColumnStats 
 func (dcs *DateColumnStats) CalculateAllStats() {
 	dcs.CalculateMin()
 	dcs.CalculateMax()
-	dcs.CalculateValueCounts()
+	dcs.valueCounts = getValueCounts(dcs.array, time.Time.Compare)
 }
 
 func (dcs *DateColumnStats) CalculateMin() {
@@ -737,26 +461,6 @@ func (dcs *DateColumnStats) CalculateMax() {
 			dcs.max = dateVal
 		}
 	}
-}
-
-func (dcs *DateColumnStats) CalculateValueCounts() {
-	valueCountsMap := make(map[string]int)
-	for _, dateVal := range dcs.array {
-		dateStr := dateVal.Format(dcs.format)
-		count, ok := valueCountsMap[dateStr]
-		if ok {
-			valueCountsMap[dateStr] = count + 1
-		} else {
-			valueCountsMap[dateStr] = 1
-		}
-	}
-	dcs.valueCounts = make([]StringValueCount, len(valueCountsMap))
-	i := 0
-	for value, count := range valueCountsMap {
-		dcs.valueCounts[i] = StringValueCount{value, count}
-		i++
-	}
-	sort.Sort(sort.Reverse(StringValueCountByCount(dcs.valueCounts)))
 }
 
 func (imc *InMemoryCsv) FprintStatsForColumnAsString(w io.Writer, columnIndex int) {
@@ -786,7 +490,7 @@ func (imc *InMemoryCsv) FprintStatsForColumnAsString(w io.Writer, columnIndex in
 
 type StringColumnStats struct {
 	array       []string
-	valueCounts []StringValueCount
+	valueCounts []valueCount[string]
 	maxLength   int
 }
 
@@ -798,7 +502,7 @@ func NewStringColumnsStats(stringArray []string) *StringColumnStats {
 
 func (scs *StringColumnStats) CalculateAllStats() {
 	scs.CalculateMaxLength()
-	scs.CalculateValueCounts()
+	scs.valueCounts = getValueCounts(scs.array, cmp.Compare)
 }
 
 func (scs *StringColumnStats) CalculateMaxLength() {
@@ -810,32 +514,121 @@ func (scs *StringColumnStats) CalculateMaxLength() {
 	}
 }
 
-func (scs *StringColumnStats) CalculateValueCounts() {
-	valueCountsMap := make(map[string]int)
-	for _, stringVal := range scs.array {
-		count, ok := valueCountsMap[stringVal]
-		if ok {
-			valueCountsMap[stringVal] = count + 1
-		} else {
-			valueCountsMap[stringVal] = 1
-		}
-	}
-	scs.valueCounts = make([]StringValueCount, len(valueCountsMap))
-	i := 0
-	for value, count := range valueCountsMap {
-		scs.valueCounts[i] = StringValueCount{value, count}
-		i++
-	}
-	sort.Sort(sort.Reverse(StringValueCountByCount(scs.valueCounts)))
+// Inferred Types
+type IT interface {
+	bool | float64 | int64 | string | time.Time
 }
 
-type StringValueCount struct {
-	value string
+type valueCount[K IT] struct {
+	value K
 	count int
 }
 
-type StringValueCountByCount []StringValueCount
+func calculateMin[E int64 | float64](values []E) E {
+	switch len(values) {
+	case 0, 1:
+		panic("need more than 1 value for comparison")
+	case 2:
+		return min(values[0], values[1])
+	default:
+		minX := min(values[0], values[1])
+		for _, x := range values[2:] {
+			minX = min(minX, x)
+		}
+		return minX
+	}
+}
 
-func (a StringValueCountByCount) Len() int           { return len(a) }
-func (a StringValueCountByCount) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a StringValueCountByCount) Less(i, j int) bool { return a[i].count < a[j].count }
+func calculateMax[E float64 | int64](values []E) E {
+	switch len(values) {
+	case 0, 1:
+		panic("need more than 1 value for comparison")
+	case 2:
+		return max(values[0], values[1])
+	default:
+		maxX := max(values[0], values[1])
+		for _, x := range values[2:] {
+			maxX = max(maxX, x)
+		}
+		return maxX
+	}
+}
+
+func calculateSum[E int64 | float64](values []E) E {
+	var sum E
+	for _, x := range values {
+		sum += x
+	}
+	return sum
+}
+
+func calculateMean[E int64 | float64](values []E) float64 {
+	return float64(calculateSum(values)) / float64(len(values))
+}
+
+func calculateMedian[E int64 | float64](values []E) float64 {
+	sorted := slices.Sorted(slices.Values(values))
+	switch n := len(sorted); {
+	default:
+		return float64(sorted[n/2])
+	case n%2 == 0:
+		return calculateMean(sorted[n/2-1 : n/2+1])
+	}
+}
+
+// Calculate the sample standard deviation (n-1); as oppossed to
+// standard deviation (n).
+func calculateStdDev[E int64 | float64](values []E) float64 {
+	mean := calculateMean(values)
+	n := len(values)
+
+	sum := 0.0
+	for _, x := range values {
+		deviation := float64(x) - mean
+		sum += deviation * deviation
+	}
+
+	variance := sum / float64(n-1)
+
+	return math.Sqrt(variance)
+}
+
+// getValueCounts iterates and counts occurences of values,
+// returning a slice of valueCount[E] sorted with the
+// highest counts first.
+//
+// In the case of different values with the same count,
+// tieBreaker enforces a consistent sort of the same-count
+// values.
+func getValueCounts[E IT](values []E, tieBreaker func(a, b E) int) []valueCount[E] {
+	counts := map[E]int{}
+	for _, x := range values {
+		counts[x] += 1
+	}
+
+	var valueCounts []valueCount[E]
+	for k, v := range maps.All(counts) {
+		valueCounts = append(valueCounts, valueCount[E]{k, v})
+	}
+
+	slices.SortFunc(valueCounts, func(a, b valueCount[E]) int {
+		if n := cmp.Compare(b.count, a.count); n != 0 {
+			return n
+		}
+		return tieBreaker(a.value, b.value)
+	})
+
+	return valueCounts
+}
+
+// boolCompare produces a consistent sort of
+// valueCount[bool] items: true, then false; use as
+// a tieBreaker for [getValueCounts].
+//
+// Currently not used.
+func boolCompare(a, b bool) int {
+	if a {
+		return -1
+	}
+	return 1
+}
