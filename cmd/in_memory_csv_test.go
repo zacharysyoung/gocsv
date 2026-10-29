@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"cmp"
+	"fmt"
 	"math"
 	"slices"
 	"testing"
@@ -259,7 +260,7 @@ func TestStatsAll(t *testing.T) {
 			t.Errorf("stdDev, got %.3f; want %.3f", fcs.stdev, stdDev)
 		}
 		if !slices.Equal(fcs.valueCounts, counts) {
-			t.Errorf("\n for %v\n got %v\nwant %v", values, fcs.valueCounts, counts)
+			t.Error(printValueCountsError(values, fcs.valueCounts, counts))
 		}
 	})
 
@@ -298,7 +299,7 @@ func TestStatsAll(t *testing.T) {
 			t.Errorf("stdDev, got %.3f; want %.3f", ics.stdev, stdDev)
 		}
 		if !slices.Equal(ics.valueCounts, counts) {
-			t.Errorf("\n for %v\n got %v\nwant %v", values, ics.valueCounts, counts)
+			t.Error(printValueCountsError(values, ics.valueCounts, counts))
 		}
 	})
 
@@ -320,7 +321,7 @@ func TestStatsAll(t *testing.T) {
 			t.Errorf("maxLen, got %d; want %d", scs.maxLength, maxLen)
 		}
 		if !slices.Equal(scs.valueCounts, counts) {
-			t.Errorf("\n for %v\n got %v\nwant %v", values, scs.valueCounts, counts)
+			t.Error(printValueCountsError(values, scs.valueCounts, counts))
 		}
 	})
 
@@ -351,13 +352,18 @@ func TestStatsAll(t *testing.T) {
 			strValues := debugTimes(values)
 			strGot := debugTimeCounts(dcs.valueCounts)
 			strWant := debugTimeCounts(counts)
-			t.Errorf("\n for %v\n got %v\nwant %v", strValues, strGot, strWant)
+			t.Error(printValueCountsError(strValues, strGot, strWant))
 		}
 	})
 }
 
-const debugLayout = "2" // legible representation of "Jan 2"
+func printValueCountsError[K IT](values []K, got, want []valueCount[K]) string {
+	return fmt.Sprintf("values,\n for %v\n got %v\nwant %v", values, got, want)
+}
 
+const debugLayout = "2'" // legible representation of "Jan 2"
+
+// Converts time.Time values to simple, legible strings.
 func debugTimes(values []time.Time) []string {
 	strValues := []string{}
 	for _, x := range values {
@@ -367,6 +373,7 @@ func debugTimes(values []time.Time) []string {
 	return strValues
 }
 
+// Converts time.Time values portion of counts to simple, legible strings.
 func debugTimeCounts(counts []valueCount[time.Time]) []valueCount[string] {
 	strCounts := []valueCount[string]{}
 	for _, x := range counts {

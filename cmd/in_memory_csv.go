@@ -514,7 +514,9 @@ func (scs *StringColumnStats) CalculateMaxLength() {
 	}
 }
 
-func calculateMin[E int64 | float64](values []E) E {
+type Number interface{ float64 | int64 }
+
+func calculateMin[E Number](values []E) E {
 	switch len(values) {
 	case 0, 1:
 		panic("need more than 1 value for comparison")
@@ -529,7 +531,7 @@ func calculateMin[E int64 | float64](values []E) E {
 	}
 }
 
-func calculateMax[E float64 | int64](values []E) E {
+func calculateMax[E Number](values []E) E {
 	switch len(values) {
 	case 0, 1:
 		panic("need more than 1 value for comparison")
@@ -544,7 +546,7 @@ func calculateMax[E float64 | int64](values []E) E {
 	}
 }
 
-func calculateSum[E int64 | float64](values []E) E {
+func calculateSum[E Number](values []E) E {
 	var sum E
 	for _, x := range values {
 		sum += x
@@ -552,11 +554,11 @@ func calculateSum[E int64 | float64](values []E) E {
 	return sum
 }
 
-func calculateMean[E int64 | float64](values []E) float64 {
+func calculateMean[E Number](values []E) float64 {
 	return float64(calculateSum(values)) / float64(len(values))
 }
 
-func calculateMedian[E int64 | float64](values []E) float64 {
+func calculateMedian[E Number](values []E) float64 {
 	sorted := slices.Sorted(slices.Values(values))
 	switch n := len(sorted); {
 	default:
@@ -568,7 +570,7 @@ func calculateMedian[E int64 | float64](values []E) float64 {
 
 // Calculate the sample standard deviation (n-1); as oppossed to
 // standard deviation (n).
-func calculateStdDev[E int64 | float64](values []E) float64 {
+func calculateStdDev[E Number](values []E) float64 {
 	mean := calculateMean(values)
 	n := len(values)
 
@@ -585,7 +587,7 @@ func calculateStdDev[E int64 | float64](values []E) float64 {
 
 // Inferred Types
 type IT interface {
-	bool | float64 | int64 | string | time.Time
+	bool | Number | string | time.Time
 }
 
 type valueCount[K IT] struct {
